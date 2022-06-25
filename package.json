@@ -1,0 +1,18 @@
+{
+  "name": "pager",
+  "version": "1.0.0",
+  "description": "A fast a secure messaging app",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron ."
+  },
+  "keywords": [
+    "chatting_app"
+  ],
+  "author": "Christ Agyeman",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^17.0.0"
+  }
+}

@@ -1,0 +1,10 @@
+{
+    "email":101,
+    "password":105,
+    "username":50,
+    "default_user":{
+        "email":"kofi@gmail.com",
+        "passsword":"kofi@22",
+        "username":"kofi"
+    }
+}

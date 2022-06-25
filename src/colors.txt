@@ -1,0 +1,5 @@
+Main(sidebar) ---> #17212b
+Second ---> #243342
+
+Main class color ---> 1f2a35
+Message from me ---> 17212B
