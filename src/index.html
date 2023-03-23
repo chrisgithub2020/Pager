@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+		<meta charset="utf-8">
+		<title>Pager</title>
+		<meta name="description" content="#">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<!-- Bootstrap core CSS -->
+		<link href="dist/css/lib/bootstrap.min.css" type="text/css" rel="stylesheet">
+		<!-- Swipe core CSS -->
+		<link href="dist/css/pager.min.css" type="text/css" rel="stylesheet">
+		<link href="dist/css/style.css" type="text/css" rel="stylesheet">
+		<link rel="stylesheet" href="dist/css/ContextMenu.css" type="text/css">
+		<!-- Favicon -->
+		<link href="dist/img/favicon.png" type="image/png" rel="icon">
+	</head>
+	<body>
+		<div style="height: 30%; width: 35%;"></div>
+		<main>
+			<div class="layout" id=".">
+				<!-- Start of Navigation -->
+				<div id="sidenav">
+					<div class="sidenav-content">
+						<div class="sidenav-image-container">
+							<img src="dist/img/avatars/avatar-female-1.jpg" alt="Girl in a jacket" id="profile_photo" class="fill-animation">
+							<button class="btn" id="show-accounts-on-sidenav" data-toggle="collapse" data-target="#show-accounts-collapsible"></button>
+						</div>
+						<div class="collapse" id="show-accounts-collapsible">
+							
+							
+						</div>
+					</div>
+					<div class="options">						
+						<a class="btn" id="new_clique" href="#creatCliqueModal" data-toggle="modal" data-target="#creatCliqueModal" onclick="closeNav()">
+							<span><i class="material-icons online sidenav-icon">group</i></span>
+							New Clique
+						</a>
+						<a href="#members" class="btn" id="contacts-btn" data-toggle="modal" data-target="#contactsModal" onclick="closeNav()">
+							<i class="material-icons online sidenav-icon">account_circle</i>
+							Contacts
+						</a>
+						<a class="btn" id="calls-btn" data-toggle="modal" data-target="#callsModal" onclick="closeNav()">
+							<span><i class="material-icons online sidenav-icon">phone</i></span>
+							Calls
+						</a>
+						<a class="btn" id="settings-btn" href="#settings" data-toggle="modal" data-target="#settingsModal" onclick="closeNav()">
+							<span><i class="material-icons online sidenav-icon">settings</i></span>
+							Settings
+						</a>
+					</div>
+						
+				</div>
+				<!-- End of Navigation -->
+				<!-- Start of Sidebar -->
+				<div class="sidebar" id="sidebar">
+					<div class="container">
+						<!-- <div class="col-md-12"> -->
+						<div class="tab-content">
+							<!-- Start of Contacts -->
+							<div id="discussions" class="tab-pane fade active show">
+								<div class="appName form-inline">
+									<button type="button" class="btn" id="show_slide_menu" role="button"><i class="material-icons">menu</i></button>
+									<p><h1>Pager</h1></p>
+								</div>
+								<div class="search">
+									<form class="form-inline position-relative">
+										<input type="search" class="form-control" id="conversations" placeholder="Search for conversations...">
+										<button type="button" class="btn btn-link loop"><i class="material-icons">search</i></button>
+									</form>
+									<button class="btn create" data-toggle="modal" data-target="#startnewchat"><i class="material-icons">create</i></button>
+								</div>
+								<!-- <div class="list-group sort">
+									<button class="btn filterDiscussionsBtn active show" data-toggle="list" data-filter="all">All</button>
+									<button class="btn filterDiscussionsBtn" data-toggle="list" data-filter="read">Read</button>
+									<button class="btn filterDiscussionsBtn" data-toggle="list" data-filter="unread">Unread</button>
+								</div>						 -->
+								<!-- Start of Discussions -->
+								<div class="discussions">
+									<div class="list-group" id="chats" role="tablist">
+										<!-- <a href="#list-chat" class="filterDiscussions all unread single active" id="list-chat-list" data-toggle="list" role="tab">
+											<img class="avatar-md" src="dist/img/avatars/avatar-female-1.jpg" data-toggle="tooltip" data-placement="top" title="Janette" alt="avatar">
+											<div class="data">
+												<h5>Janette Dalton</h5>
+												<span>Mon</span>
+												<p>A new feature has been updated to your account. Check it out...</p>
+											</div>
+										</a>
+										<a href="#list-chat" class="filterDiscussions all unread single active" id="list-chat-list" data-toggle="list" role="tab">
+											<img class="avatar-md" src="dist/img/avatars/avatar-female-1.jpg" data-toggle="tooltip" data-placement="top" title="Janette" alt="avatar">
+											<div class="data">
+												<h5>Janette Dalton</h5>
+												<span>Mon</span>
+												<p>A new feature has been updated to your account. Check it out...</p>
+											</div>
+										</a>
+										<a href="#list-chat" class="filterDiscussions all unread single active" id="list-chat-list" data-toggle="list" role="tab">
+											<img class="avatar-md" src="dist/img/avatars/avatar-female-1.jpg" data-toggle="tooltip" data-placement="top" title="Janette" alt="avatar">
+											
+											<div class="data">
+												<h5>Janette Dalton</h5>
+												<span>Mon</span>
+												<p>A new feature has been updated to your account. Check it out...</p>
+											</div>
+										</a>
+										<a href="#list-chat" class="filterDiscussions all unread single active" id="list-chat-list" data-toggle="list" role="tab">
+											<img class="avatar-md" src="dist/img/avatars/avatar-female-1.jpg" data-toggle="tooltip" data-placement="top" title="Janette" alt="avatar">
+											
+											<div class="data">
+												<h5>Janette Dalton</h5>
+												<span>Mon</span>
+												<p>A new feature has been updated to your account. Check it out...</p>
+											</div>
+										</a>									
+										<a href="#list-empty" class="filterDiscussions all unread single" id="list-empty-list" data-toggle="list" role="tab">
+											<img class="avatar-md" src="dist/img/avatars/avatar-male-1.jpg" data-toggle="tooltip" data-placement="top" title="Michael" alt="avatar">
+											
+											<div class="data">
+												<h5>Michael Knudsen</h5>
+												<span>Sun</span>
+												<p>How can i improve my chances of getting a deposit?</p>
+											</div>
+										</a>									
+										<a href="#list-chat" class="filterDiscussions all read single" id="list-chat-list2" data-toggle="list" role="tab">
+											<img class="avatar-md" src="dist/img/avatars/avatar-female-2.jpg" data-toggle="tooltip" data-placement="top" title="Lean" alt="avatar">
+											
+											<div class="data">
+												<h5>Lean Avent</h5>
+												<span>Tus</span>
+												<p>Hey Chris, could i ask you to help me out with variation...</p>
+											</div>
+										</a>
+										<a href="#list-empty" class="filterDiscussions all read single" id="list-empty-list2" data-toggle="list" role="tab">
+											<img class="avatar-md" src="dist/img/avatars/avatar-male-2.jpg" data-toggle="tooltip" data-placement="top" title="Mariette" alt="avatar">
+											
+											<div class="data">
+												<h5>Mariette Toles</h5>
+												<span>5 mins</span>
+												<p>By injected humour, or randomised words which...</p>
+											</div>
+										</a>
+										<a href="#list-chat" class="filterDiscussions all read single" id="list-chat-list3" data-toggle="list" role="tab">
+											<img class="avatar-md" src="dist/img/avatars/avatar-female-3.jpg" data-toggle="tooltip" data-placement="top" title="Harmony" alt="avatar">
+											<div class="status">
+												<i class="material-icons online">fiber_manual_record</i>
+											</div>
+											<div class="data">
+												<h5>Harmony Otero</h5>
+												<span>Mon</span>
+												<p>No more running out of the office at 4pm on Fridays!</p>
+											</div>
+										</a>
+										<a href="#list-empty" class="filterDiscussions all read single" id="list-empty-list3" data-toggle="list" role="tab">
+											<img class="avatar-md" src="dist/img/avatars/avatar-female-5.jpg" data-toggle="tooltip" data-placement="top" title="Keith" alt="avatar">
+											<div class="status">
+												<i class="material-icons offline">fiber_manual_record</i>
+											</div>
+											<div class="data">
+												<h5>Keith Morris</h5>
+												<span>Fri</span>
+												<p>All your favourite books at your reach! We are now mobile.</p>
+											</div>
+										</a>
+										<a href="#list-request" class="filterDiscussions all unread single" id="list-request-list" data-toggle="list" role="tab">
+											<img class="avatar-md" src="dist/img/avatars/avatar-female-6.jpg" data-toggle="tooltip" data-placement="top" title="Louis" alt="avatar">
+											<div class="status">
+												<i class="material-icons offline">fiber_manual_record</i>
+											</div>
+											<div class="new bg-gray">
+												<span>?</span>
+											</div>
+											<div class="data">
+												<h5>Louis Martinez</h5>
+												<span>Feb 10</span>
+												<p>Hi Keith, I'd like to add you as a contact.</p>
+											</div>
+										</a>
+										<a href="#list-empty" class="filterDiscussions all read single" id="list-empty-list4" data-toggle="list" role="tab">
+											<img class="avatar-md" src="dist/img/avatars/avatar-male-3.jpg" data-toggle="tooltip" data-placement="top" title="Ryan" alt="avatar">
+											<div class="status">
+												<i class="material-icons offline">fiber_manual_record</i>
+											</div>
+											<div class="data">
+												<h5>Ryan Foster</h5>
+												<span>Feb 9</span>
+												<p>Dear Deborah, your Thai massage is today at 5pm.</p>
+											</div>
+										</a>
+										<a href="#list-chat" class="filterDiscussions all unread single" id="list-chat-list5" data-toggle="list" role="tab">
+											<img class="avatar-md" src="dist/img/avatars/avatar-male-4.jpg" data-toggle="tooltip" data-placement="top" title="Mildred" alt="avatar">
+											<div class="status">
+												<i class="material-icons offline">fiber_manual_record</i>
+											</div>
+											<div class="new bg-green">
+												<span>+9</span>
+											</div>
+											<div class="data">
+												<h5>Mildred Bennett</h5>
+												<span>Thu</span>
+												<p>Unfortunately your session today has been cancelled!</p>
+											</div>
+										</a> -->
+									</div>
+								</div>
+							</div>
+							<!-- End of Discussions -->							
+						</div>
+						<!-- </div> -->
+					</div>
+				</div>
+				<!-- End of Sidebar -->
+				<!-- Start of Contacts Modal -->
+						
+				<div class="modal fade" id="contactsModal" tabindex="-1" role="dialog" aria-hidden="true">
+					<div class="modal-dialog modal-dialog-centered" role="figure">
+						<div class="requests tab-content">
+							<div class="tab-pane fade active show" id="mainContactPage">
+								<div class="requests">
+									<div class="title">
+										<h1>Contacts</h1>
+										<button type="button" class="btn" data-dismiss="modal" aria-label="Close"><i class="material-icons">close</i></button>
+									</div>
+									<div class="search contacts-search">
+										<form class="form-inline position-relative">
+											<button type="button" class="btn btn-link loop contacts-search"><i class="material-icons">search</i></button>
+											<input type="search" class="form-control" id="people" placeholder="Search for people...">
+										</form>
+										<button class="btn create creat-contact" data-toggle="modal" data-target="#exampleModalCenter"><i class="material-icons">person_add</i></button>
+									</div>
+									<div id="contacts-container">
+										
+									</div>
+								</div>
+							</div>
+							<div class="tab-pane fade" id="contactInfo">
+								<div class="title">
+									<h1 id="contact-name"></h1>
+									<button type="button" class="btn" data-dismiss="modal" aria-label="Close"><i class="material-icons">close</i></button>
+								</div>
+								<div class="set-profile-photo-area">
+									<img id="contact-pic" src="dist/img/avatars/avatar-female-1.jpg" alt="Profile Photo" class="settings-profile-photo center-profile-photo">
+									<div id="contact-actions-div">
+										<i id="message-contact" class="material-icons icon-padding">chat_bubble_outline</i>
+										<i id="call-contact-voice" class="material-icons icon-padding">phone_in_talk</i>
+										<i id="call-contact-video" class="material-icons icon-padding">videocam</i>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- End of Contacts Modal -->
+				<!-- Start of Calls Modal -->
+				<div class="modal fade" id="callsModal" tabindex="-1" role="dialog" aria-hidden="true">
+					<div class="modal-dialog modal-dialog-centered" role="figure">
+						<div class="requests">
+							<div class="title">
+								<h1>Calls</h1>
+								<button type="button" class="btn" data-dismiss="modal" aria-label="Close"><i class="material-icons">close</i></button>
+							</div>
+							<div class="search contacts-search">
+								<form class="form-inline position-relative">
+									<button type="button" class="btn btn-link loop contacts-search"><i class="material-icons">search</i></button>
+									<input type="search" class="form-control" id="people" placeholder="Search for people...">
+								</form>
+							</div>
+							<div class="calls-container">
+								
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- End of Calls Modal -->
+				<!-- Start of Settings Modal -->
+				<div class="modal fade" id="settingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+					<div class="modal-dialog modal-dialog-centered" role="figure">
+						<div class="requests tab-content">
+							<div class="tab-pane fade active show" id="mainSettingsPage">
+								<div class="title">
+									<h1>Settings</h1>
+									<div id="settings-toolbar">
+										<div class="dropdown">
+											<button type="button" class="btn more-account-options" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="material-icons">more_vert</i></button>
+											<div class="dropdown-menu dropdown-menu-right">
+												<button id="add-account" class="dropdown-item connect" name="1"><i class="material-icons">add</i>Add account</button>
+												<button id="log-out" class="dropdown-item connect" name="1"><i class="material-icons">exit_to_app</i>Log out</button>
+											</div>
+										</div>
+										<button type="button" class="btn" data-dismiss="modal" aria-label="Close"><i class="material-icons">close</i></button>
+	
+									</div>
+								</div>
+								<div class="search contacts-search">
+									<form class="form-inline position-relative">
+										<button type="button" class="btn btn-link loop contacts-search"><i class="material-icons">search</i></button>
+										<input type="search" class="form-control" id="people" placeholder="Search for people...">
+									</form>
+								</div>
+								<div class="settings-content">
+									<div class="active-account">
+										<img id="setting-profile-picture" src="dist/img/avatars/avatar-female-1.jpg" alt="" class="settings-profile-photo">
+										<div id="active-account-name-and-status">
+											<h6 id="username">Username</h6>
+											<tbody>Online</tbody>
+										</div>
+									</div>
+									<div class="settings-category">
+	
+										<a href="#editProfile" data-toggle="tab" class="btn setting-btn"><i class="material-icons setting-material-icon">info</i>Edit Profile</a>
+										<a href="#notification" onclick="insert_go_back_btn()" data-toggle="tab" class="btn setting-btn"><i class="material-icons setting-material-icon">notifications_none</i>Notification</a>
+										<a class="btn setting-btn"><i class="material-icons setting-material-icon">colorize</i>Appearance</a>
+										<a class="btn setting-btn"><i class="material-icons setting-material-icon">chat_bubble_outline</i>Chat Settings</a>
+										<a class="btn setting-btn"><i class="material-icons setting-material-icon">lock_outline</i>Privacy & Security</a>
+									</div>
+									<div class="settings-category no-bottom-border">
+										<button class="btn setting-btn"><i class="material-icons setting-material-icon">help</i>Help</button>
+										<button class="btn setting-btn"><i class="material-icons setting-material-icon">info</i>About</button>
+									</div>
+									
+								</div>
+							</div>
+							<div class="tab-pane fade" id="editProfile">
+								<div class="title">
+									<h1>Edit Profile</h1>
+									<button type="button" class="btn" data-dismiss="modal" aria-label="Close"><i class="material-icons">close</i></button>
+								</div>
+								<div class="set-profile-photo-area">
+									<img src="dist/img/avatars/avatar-female-1.jpg" alt="Profile Photo" class="settings-profile-photo center-profile-photo">
+									<button type="button" class="btn change-profile-photo" id="change-profile-photo-user">Change Profile Photo</button>									
+								</div>
+								<div class="edit-profile">
+									<div class="edit-profile-option">
+										<a href="" class="edit-profile-btn"><i class="material-icons edit-profile-material-icon">account_circle</i></a>
+										<div id="edit-profile-name">
+											<h6>Username</h6>
+											<tbody>Name</tbody>
+										</div>
+									</div>
+									<div class="edit-profile-option border-bottom">
+										<a href="" class="edit-profile-btn"><i class="material-icons edit-profile-material-icon">account_circle</i></a>
+										<div id="edit-profile-name">
+											<h6>Contact</h6>
+											<tbody>Phone or Email</tbody>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="tab-pane fade" id="notification">
+								<div id=",," class="title">
+									<h1>Notification</h1>
+									<button type="button" class="btn" data-dismiss="modal" aria-label="Close"><i class="material-icons">close</i></button>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- End of Ssettings Modal -->
+				<!-- Start of Add Friends -->
+				<div class="modal fade" id="exampleModalCenter" tabindex="-1" role="dialog" aria-hidden="true">
+					<div class="modal-dialog modal-dialog-centered" role="document">
+						<div class="requests">
+							<div class="title">
+								<h1>Add your friends</h1>
+								<button type="button" class="btn" data-dismiss="modal" aria-label="Close"><i class="material-icons">close</i></button>
+							</div>
+							<div class="content">
+								<form>
+									<div class="form-group">
+										<label for="user">Username:</label>
+										<input type="text" class="form-control" id="user" placeholder="Add recipient..." required>
+										<div class="user" id="contact">
+											<img class="avatar-sm" src="dist/img/avatars/avatar-female-5.jpg" alt="avatar">
+											<h5>Keith Morris</h5>
+											<button class="btn"><i class="material-icons">close</i></button>
+										</div>
+									</div>
+									<div class="form-group">
+										<label for="welcome">Message:</label>
+										<textarea class="text-control" id="welcome" placeholder="Send your welcome message...">Hi Keith, I'd like to add you as a contact.</textarea>
+									</div>
+									<button type="submit" class="btn button w-100">Send Friend Request</button>
+								</form>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- End of Add Friends -->
+				<div class="modal fade" id="creatCliqueModal" tabindex="-1" role="dialog" aria-hidden="true">
+					<div class="modal-dialog modal-dialog-centered" role="document">
+						<div class="requests tab-content">
+							<div class="title">
+								<h1>Create New Clique</h1>
+								<button type="button" class="btn" data-dismiss="modal" aria-label="Close"><i class="material-icons">close</i></button>
+							</div>
+							<div class="tab-pane fade active show content" id="startCliqueCreating">
+								<form>
+									<div class="form-group">
+										<label for="cliqueName">Clique Name:</label>
+										<input type="text" class="form-control" name="cliqueName" id="cliqueName" placeholder="Clique name" required>
+									</div>
+									<div class="form-group">
+										<label for="cliqueLink">Clique Link:</label>
+										<input type="text" class="form-control" name="cliqueLink" id="cliqueLink" placeholder="Share with people who want to join" required>
+									</div>
+									<div class="form-group">
+										<label for="cliqueAbout">About:</label>
+										<input type="text" class="form-control" name="cliqueAbout" id="cliqueAbout" placeholder="What the clique is about" required>
+									</div>
+									<a href="#chooseCliqueMembers" data-toggle="tab" class="btn button w-100" id="clique-continue-btn">Continue</a>
+								</form>
+							</div>
+							<div class="tab-pane fade content" id="chooseCliqueMembers">
+								<div id="show-chosen-contacts"></div>
+								<div id="contacts-container-for-clique"></div>
+								<a href="#cliqueProfilePic" data-toggle="tab" class="btn button w-100" id="finish-choosing-clique-members">Next</a>
+							</div>
+							<div style="padding: 7px;" class="tab-pane fade content" id="cliqueProfilePic">
+								<div style="margin-bottom: 10px;" class="set-profile-photo-area">
+									<img src="dist/img/avatars/avatar-female-1.jpg" id="profile-photo-clique" alt="Profile Photo" class="settings-profile-photo center-profile-photo">
+									<button type="button" class="btn change-profile-photo" id="change-profile-photo-clique">Choose Profile Photo</button>									
+								</div>
+								<a href="#create-clique-settings" data-toggle="tab" class="btn button w-100">Next</a>
+							</div>
+							<div class="tab-pane fade content" id="create-clique-settings">
+								<div class="custom-control custom-switch">
+									<input class="custom-control-input" type="checkbox" id="allow-members-send-message" name="clique-broadcast-type" value=1>
+									<label class="custom-control-label" for="allow-members-send-message">Allow member to send message</label><br>
+								</div>
+								<div class="custom-control custom-switch">
+									<input class="custom-control-input" type="checkbox" id="allow-only-admins-send-message" name="clique-broadcast-type" value=0>
+									<label class="custom-control-label" for="allow-only-admins-send-message">Allow only admins to send message</label>
+								</div>
+								<br>
+								<div class="custom-control custom-switch">
+									<input class="custom-control-input" type="checkbox" id="allow-only-admins-change-profile-pic" name="clique-change-profile" value=0>
+									<label class="custom-control-label" for="allow-only-admins-change-profile-pic">Allow members to change profile</label>
+								</div>
+								<div class="custom-control custom-switch">
+									<input class="custom-control-input" type="checkbox" id="allow-members-change-profile-pic" name="clique-change-profile" value=0>
+									<label class="custom-control-label" for="allow-members-change-profile-pic">Allow only admins to change profile</label>
+								</div>
+								<a style="margin-top:10px;" href="#" data-toggle="tab" class="btn button w-100" id="create-clique">Create</a>
+							</div>
+							
+						</div>
+					</div>
+				</div>
+				<!-- Start of Create Chat -->
+				<div class="modal fade" id="startnewchat" tabindex="-1" role="dialog" aria-hidden="true">
+					<div class="modal-dialog modal-dialog-centered" role="document">
+						<div class="requests">
+							<div class="title">
+								<h1>Start new chat</h1>
+								<button type="button" class="btn" data-dismiss="modal" aria-label="Close"><i class="material-icons">close</i></button>
+							</div>
+							<div class="content">
+								<form>
+									<div class="form-group">
+										<label for="participant">Recipient:</label>
+										<input name="participant" type="text" class="form-control" id="participant" placeholder="Add recipient..." required>
+										<!-- <div class="user" id="recipient">
+											<img class="avatar-sm" src="dist/img/avatars/avatar-female-5.jpg" alt="avatar">
+											<h5>Keith Morris</h5>
+											<button class="btn"><i class="material-icons">close</i></button>
+										</div> -->
+									</div>
+									<div class="form-group">
+										<label for="contactName">Name:</label>
+										<input name="contactName" type="text" class="form-control" id="contactName" placeholder="What's the topic?" required>
+									</div>
+									<div class="form-group">
+										<label for="message">Message:</label>
+										<textarea name="first_message" class="text-control" id="message" placeholder="Send your welcome message...">Hmm, are you friendly?</textarea>
+									</div>
+									<div id="create-contact-button-div">
+										<button type="button" class="btn button w-100" id="verify-contact-button">Verify Contact</button>
+									</div>
+								</form>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- End of Create Chat -->
+				<!-- Start of contact info modal -->
+				<div class="modal fade" id="chatInfo" tabindex="-1" role="dialog" aria-hidden="true">
+					<div class="modal-dialog modal-dialog-centered" role="figure">
+						<div class="requests">
+							<div class="title">
+								<h1>Chat Info</h1>
+								<button type="button" class="btn" data-dismiss="modal" aria-label="Close"><i class="material-icons">close</i></button>
+							</div>
+							<div class="set-profile-photo-area">
+								<img src="dist/img/avatars/avatar-female-1.jpg" alt="Profile Photo" class="settings-profile-photo center-profile-photo by-70">
+							</div>
+							<div class="edit-profile">
+								<div class="edit-profile-option">
+									<div id="edit-profile-name">
+										<h6 id="saved-name" style="padding-left: 40px;"></h6>
+										<p id="show-chat-email" style="padding-left: 40px;"></p>
+									</div>
+								</div>
+								<div class="edit-profile-option border-bottom">
+									<div id="edit-profile-name">
+										<h6 id="chat-contact" style="padding-left: 40px;"></h6>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- End of chat info modal  -->
+				<!--Start of confirm file modal-->
+				<div class="modal fade" id="confirmFileModal" tabindex="-1" role="dialog" aria-hidden="true">
+					<div class="modal-dialog modal-dialog-centered" role="figure">
+						<div class="requests modal-content">
+							<div class="title">
+								<h1>Confirm FIle</h1>
+								<button type="button" class="btn" data-dismiss="modal" aria-label="Close"><i class="material-icons">close</i></button>
+							</div>
+							<div id="show-file-details">
+							</div>
+							<div id="confirm-file-btns-div">
+								<button type="button" class="btn button" data-dismiss="modal">Cancel</button>
+								<button id="send-media-btn" type="button" class="btn button">Send</button>
+							</div>
+							
+						
+						</div>
+
+					</div>
+
+				</div>
+				<div class="main">
+					<div class="tab-content" id="nav-tabContent">
+						<!-- Start of Babble -->
+						<div class="babble tab-pane fade active show" id="list-chat" role="tabpanel" aria-labelledby="list-chat-list">
+						</div>
+						<!-- End of Babble -->
+						<!-- Start of Babble -->
+						<!-- <div class="babble tab-pane fade" id="list-empty" role="tabpanel" aria-labelledby="list-empty-list">
+							Start of Chat
+							<div class="chat" id="chat2">
+								<div class="top">
+									<div class="container">
+										<div class="col-md-12">
+											<div class="inside">
+												<a href="#"><img class="avatar-md" src="dist/img/avatars/avatar-female-2.jpg" data-toggle="tooltip" data-placement="top" title="Lean" alt="avatar"></a>
+												<div class="status">
+													<i class="material-icons offline">fiber_manual_record</i>
+												</div>
+												<div class="data">
+													<h5><a href="#">Lean Avent</a></h5>
+													<span>Inactive</span>
+												</div>
+												<button class="btn connect d-md-block d-none" name="2"><i class="material-icons md-30">phone_in_talk</i></button>
+												<button class="btn connect d-md-block d-none" name="2"><i class="material-icons md-36">videocam</i></button>
+												<button class="btn d-md-block d-none"><i class="material-icons md-30">info</i></button>
+												<div class="dropdown">
+													<button class="btn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="material-icons md-30">more_vert</i></button>
+													<div class="dropdown-menu dropdown-menu-right">
+														<button class="dropdown-item connect" name="2"><i class="material-icons">phone_in_talk</i>Voice Call</button>
+														<button class="dropdown-item connect" name="2"><i class="material-icons">videocam</i>Video Call</button>
+														<hr>
+														<button class="dropdown-item"><i class="material-icons">clear</i>Clear History</button>
+														<button class="dropdown-item"><i class="material-icons">block</i>Block Contact</button>
+														<button class="dropdown-item"><i class="material-icons">delete</i>Delete Contact</button>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="content empty">
+									<div class="container">
+										<div class="col-md-12">
+											<div class="no-messages">
+												<i class="material-icons md-48">forum</i>
+												<p>Seems people are shy to start the chat. Break the ice send the first message.</p>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="container">
+									<div class="col-md-12">
+										<div class="bottom">
+											<form class="position-relative w-100">
+												<textarea class="form-control" placeholder="Start typing for reply..." rows="1"></textarea>
+												<button class="btn emoticons"><i class="material-icons">insert_emoticon</i></button>
+												<button type="submit" class="btn send"><i class="material-icons">send</i></button>
+											</form>
+											<label>
+												<input type="file">
+												<span class="btn attach d-sm-block d-none"><i class="material-icons">attach_file</i></span>
+											</label> 
+										</div>
+									</div>
+								</div>
+							</div>
+							<-- End of Chat -->
+							<!-- Start of Call -->
+							<!-- <div class="call" id="call2">
+								<div class="content">
+									<div class="container">
+										<div class="col-md-12">
+											<div class="inside">
+												<div class="panel">
+													<div class="participant">
+														<img class="avatar-xxl" src="dist/img/avatars/avatar-female-2.jpg" alt="avatar">
+														<span>Connecting</span>
+													</div>							
+													<div class="options">
+														<button class="btn option"><i class="material-icons md-30">mic</i></button>
+														<button class="btn option"><i class="material-icons md-30">videocam</i></button>
+														<button class="btn option call-end"><i class="material-icons md-30">call_end</i></button>
+														<button class="btn option"><i class="material-icons md-30">person_add</i></button>
+														<button class="btn option"><i class="material-icons md-30">volume_up</i></button>
+													</div>
+													<button class="btn back" name="2"><i class="material-icons md-24">chat</i></button>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div> -->
+							<!-- End of Call -->
+						<!-- </div> -->
+						<!-- End of Babble -->
+						<!-- Start of Babble -->
+						<!-- <div class="babble tab-pane fade" id="list-request" role="tabpanel" aria-labelledby="list-request-list"> -->
+							<!-- Start of Chat -->
+							<!-- <div class="chat" id="chat3">
+								<div class="top">
+									<div class="container">
+										<div class="col-md-12">
+											<div class="inside">
+												<a href="#"><img class="avatar-md" src="dist/img/avatars/avatar-female-6.jpg" data-toggle="tooltip" data-placement="top" title="Louis" alt="avatar"></a>
+												<div class="status">
+													<i class="material-icons offline">fiber_manual_record</i>
+												</div>
+												<div class="data">
+													<h5><a href="#">Louis Martinez</a></h5>
+													<span>Inactive</span>
+												</div>
+												<button class="btn disabled d-md-block d-none" disabled><i class="material-icons md-30">phone_in_talk</i></button>
+												<button class="btn disabled d-md-block d-none" disabled><i class="material-icons md-36">videocam</i></button>
+												<button class="btn d-md-block disabled d-none" disabled><i class="material-icons md-30">info</i></button>
+												<div class="dropdown">
+													<button class="btn disabled" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" disabled><i class="material-icons md-30">more_vert</i></button>
+													<div class="dropdown-menu dropdown-menu-right">
+														<button class="dropdown-item"><i class="material-icons">phone_in_talk</i>Voice Call</button>
+														<button class="dropdown-item"><i class="material-icons">videocam</i>Video Call</button>
+														<hr>
+														<button class="dropdown-item"><i class="material-icons">clear</i>Clear History</button>
+														<button class="dropdown-item"><i class="material-icons">block</i>Block Contact</button>
+														<button class="dropdown-item"><i class="material-icons">delete</i>Delete Contact</button>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="content empty">
+									<div class="container">
+										<div class="col-md-12">
+											<div class="no-messages request">
+												<a href="#"><img class="avatar-xl" src="dist/img/avatars/avatar-female-6.jpg" data-toggle="tooltip" data-placement="top" title="Louis" alt="avatar"></a>
+												<h5>Louis Martinez would like to add you as a contact. <span>Hi Keith, I'd like to add you as a contact.</span></h5>
+												<div class="options">
+													<button class="btn button"><i class="material-icons">check</i></button>
+													<button class="btn button"><i class="material-icons">close</i></button>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="container">
+									<div class="col-md-12">
+										<div class="bottom">
+											<form class="position-relative w-100">
+												<textarea class="form-control" placeholder="Messaging unavailable" rows="1" disabled></textarea>
+												<button class="btn emoticons disabled" disabled><i class="material-icons">insert_emoticon</i></button>
+												<button class="btn send disabled" disabled><i class="material-icons">send</i></button>
+											</form>
+											<label>
+												<input type="file" disabled>
+												<span class="btn attach disabled d-sm-block d-none"><i class="material-icons">attach_file</i></span>
+											</label> 
+										</div>
+									</div>
+								</div>
+							</div>-->
+							<!-- End of Chat -->
+						<!-- </div> -->
+						<!-- End of Babble -->
+					</div>
+				</div>
+			</div> <!-- Layout -->
+
+			<!-- Start of Gallery -->
+			<div id="gallery-div" class="blur-background">
+				<button id="close-gallery-button" class="btn"><i class="material-icons">close</i></button>
+			</div>
+		</main>
+		<!-- Bootstrap/Swipe core JavaScript
+		================================================== -->
+		<!-- Placed at the end of the document so the pages load faster -->
+		<script src="dist/js/jquery-3.6.js" crossorigin="anonymous"></script>
+		<script>window.jQuery || document.write('<script src="dist/js/jquery-3.3.1.slim.min.js"><\/script>')</script>
+		<script src="dist/js/vendor/popper.min.js"></script>
+		<script src="dist/js/pager.min.js"></script>
+		<script src="dist/js/bootstrap.min.js"></script>
+		<script src="dist/js/index.js"></script>
+		<script src="../main_page.js"></script>
+		<script src="dist/js/ContextMenu.js"></script>
+		<script>
+			function showContextMenu(){
+				
+				const copyIcon = `<svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.5" style="margin-right: 7px" fill="none" stroke-linecap="round" stroke-linejoin="round" class="css-i6dzq1"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+				
+				const cutIcon = `<svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.5" style="margin-right: 7px" fill="none" stroke-linecap="round" stroke-linejoin="round" class="css-i6dzq1"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>`;
+			  
+				const pasteIcon = `<svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.5" style="margin-right: 7px; position: relative; top: -1px" fill="none" stroke-linecap="round" stroke-linejoin="round" class="css-i6dzq1"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>`;
+				
+				const downloadIcon = `<svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.5" style="margin-right: 7px; position: relative; top: -1px" fill="none" stroke-linecap="round" stroke-linejoin="round" class="css-i6dzq1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
+				
+				const deleteIcon = `<svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.5" fill="none" style="margin-right: 7px" stroke-linecap="round" stroke-linejoin="round" class="css-i6dzq1"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
+				
+				const menuItems = [
+					{
+					content: `${copyIcon}Copy`,
+					events: {
+						click: (e) => console.log(e, "Copy Button Click")
+						// mouseover: () => console.log("Copy Button Mouseover")
+						// You can use any event listener from here
+					}
+					},
+					{ content: `${pasteIcon}Paste` },
+					{ content: `${cutIcon}Cut` },
+					{ content: `${downloadIcon}Download` },
+					{
+					content: `${deleteIcon}Delete`,
+					divider: "top" // top, bottom, top-bottom
+					}
+				];
+				
+				const msg_area_dark = new ContextMenu({
+					target: ".msg-area-target-dark",
+					menuItems
+				});
+				
+				msg_area_dark.init();
+
+				const msg_dark = new ContextMenu({
+					target: ".msg-target-dark",
+					menuItems
+				});
+				
+				msg_dark.init();
+			}
+		  </script>
+	</body>
+
+</html>

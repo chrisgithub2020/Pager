@@ -1,0 +1,44 @@
+{
+  "name": "pager",
+  "version": "1.0.0",
+  "description": "A fast a secure messaging app",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "keywords": [
+    "chatting_app"
+  ],
+  "author": "Christ Agyeman",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^17.4.11",
+    "electron-builder": "^23.6.0"
+  },
+  "dependencies": {
+    "browser-env": "^3.3.0",
+    "detect-file-type": "^0.2.8",
+    "firebase": "^9.17.1",
+    "id3-parser": "^2.0.0",
+    "jsmediatags": "^3.9.7",
+    "mime-types": "^2.1.35",
+    "mutag": "^2.0.7",
+    "node-fetch": "^3.3.1",
+    "socket.io-client": "^4.5.4",
+    "whatwg-fetch": "^3.6.2"
+  },
+  "build": {
+    "appId": "com.chris.Pager",
+    "productName": "Pager",
+    "target": "NSIS",
+    "directories": {
+      "output": "build"
+    },
+    "nsis": {
+      "allowToChangeInstallationDirectory": true,
+      "oneClick": false
+    }
+  }
+}

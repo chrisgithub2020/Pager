@@ -1,0 +1,1603 @@
+const ipc = require("electron").ipcRenderer
+const DesktopCapture = require("electron").desktopCapturer
+const crypto = require("crypto");
+const { desktopCapturer } = require("electron");
+const fs = require("fs");
+const media_tags = require("jsmediatags")
+const allow_member_to_send_msg_checkBox = document.getElementById('allow-members-send-message');
+const allow_only_admins_to_send_msg_checkBox = document.getElementById("allow-only-admins-send-message")
+const allow_only_admins_to_change_profile_pic = document.getElementById("allow-only-admins-change-profile-pic")
+const allow_members_to_change_profile_pic = document.getElementById("allow-members-change-profile-pic")
+let send_audio_message_play_pause = null;
+let audio_playing = false;
+let clique_list = []; // List of all cliques in db
+const go_back_btns = document.getElementsByClassName("go-back")
+var localStream = null
+var remoteStream = null
+var call_ongoing = false
+// Calling
+const stun_server = {
+    iceServers: [
+        {
+            urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302']
+        },
+    ],
+    iceCandidatePoolSize: 10,
+}
+var pc = null;
+
+document.addEventListener("DOMContentLoaded", () => {
+    pc = new RTCPeerConnection(stun_server)
+
+    console.log(pc.connectionState)
+
+
+    pc.onicecandidate = (event) => {
+        const cand_data = {
+            "cand": event.candidate,
+            "email": chat_to_perform_action
+        }
+        ipc.send("send-ice-cand", cand_data)
+        console.log("this is the ice candidate ", event.candidate)
+    }
+})
+
+ipc.on("icecandidate", (event, candidate) => {
+    pc.addIceCandidate(new RTCIceCandidate(event.candidate))
+})
+
+ipc.on("rtc-offer", async (event, offer) => {
+    // if (panel_visibility != true){
+
+    //     show_send_message_panel(verify_con)
+    // }
+
+    
+    $("#chat").hide()
+    $("#call").show()
+    
+    let constraint = null
+    if (offer["calltype"] === "audio"){
+        constraint = {"audio":true,"video":false}
+    } else if (offer["calltype"] === "video"){
+        constraint = {"audio":true,"video":true}
+    }
+    document.getElementById("answer-end-call").addEventListener("click",async (event)=>{
+        if (call_ongoing === false){
+
+            return navigator.mediaDevices.getUserMedia(constraint)
+            .then((stream) => {
+                Call.localStream = stream
+                Call.remoteStream = new MediaStream()
+        
+                Call.localStream.getTracks().forEach((track) => {
+                    pc.addTrack(track, Call.localStream)
+                })
+        
+                pc.ontrack = (event) => {
+                    event.streams[0].getTracks().forEach((track) => {
+                        Call.remoteStream.addTrack(track)
+                    })
+                }
+            })
+            pc.setRemoteDescription(offer["offer"])
+            const answer = await pc.createAnswer()
+            pc.setLocalDescription(answer)
+        
+            ipc.send("answer", { "answer": answer, "email": offer["email"] })
+            call_ongoing = true
+        } else{
+            call_ongoing = false
+        }
+
+    })
+})
+
+var recording_audio = false
+var voice_callBTN
+var video_callBTN
+
+var incomingCall;
+
+
+
+
+var isChannelReady = false;
+var isInitiator = false;
+var isStarted = false;
+var turnReady;
+
+// Switching between audio and send message button
+var buttons_container = ""
+var timeout_id = 0
+
+var show_attachment_menu = false
+
+var send_message_btn = document.createElement("button")
+send_message_btn.setAttribute("id", "send-message")
+send_message_btn.setAttribute("class", "btn send")
+send_message_btn.setAttribute("type", "button")
+send_message_btn.innerHTML = `<i class="material-icons">send</i>`
+var send_audio_btn = ""
+
+//Gallery
+const gallery_div = document.getElementById("gallery-div")
+
+/// Displaying html
+var contacts_container = document.getElementById("contacts-container")
+var contact_container_for_clique_members_choosing = document.getElementById("contacts-container-for-clique")
+
+// Showing messages element
+var show_message = ''
+
+/// Account db
+var account_db = {}
+var user_obj = {}
+
+/// Displaying accounts
+var accounts_card_collapsible = document.getElementById("show-accounts-collapsible")
+
+/// Received Messages
+var unread_msg = {}
+var last_recieved_message = ""
+var panel_visibility = {}
+var message_hint_element = {}
+
+/// Displaying chat card
+var chats_container = document.getElementById("chats")
+var list_chat = document.getElementById("list-chat")
+var verify_displayed_chat_card_email_list = [] //! contains list of emails of contacts that are displayed as recent chats,used to verify message from contact
+var contact_email_and_saved_name = {}  // contains the email of every contact mapping to the saved name. Used to verify if that contact has a messages field in DB
+
+
+
+/// *  Adding Contact variables
+var add_contact_fields = document.querySelectorAll("#participant, #contactName, #message")
+var add_contact_button_html = "<button onclick='save_contact()' type='button' class='btn button w-100' id='create-contact-button'>Add Contact</button>"
+var verify_contact_button = document.getElementById("verify-contact-button")
+var contact_avatar = document.getElementsByClassName("contacts-avatar")
+let add_contact_obj = {}
+
+// * Creating new clique
+var new_clique_fields = document.querySelectorAll("#cliqueName, #cliqueLink, #cliqueAbout")
+var creating_clique_members = []
+
+
+// When a user clicks a contact and wants to perform an action on the contact
+let contact_to_perform_action = "" // ! the name of a comtact as saved
+document.getElementById("message-contact").addEventListener("click", start_messaging_from_contacts)
+//When a user clicks a chat and want to start communicating
+let chat_to_perform_action = null
+var no_contact = false
+
+// Log Out
+document.getElementById("log-out").addEventListener("click", () => {
+    user_obj["active"] = ""
+    console.log(user_obj["active"])
+    ipc.send("log-out", JSON.stringify(user_obj))
+})
+
+// * Showing create contact modal if user has no contact
+ipc.on("no-contact", (event) => {
+    console.log("no-contact")
+    no_contact = true
+    $("#startnewchat").modal("show")
+})
+
+// Update db in runtime if an changes occurs in main process
+ipc.on("update_db",(event,db)=>{
+    account_db = db
+})
+
+/// Alerts the main process to send the user info
+ipc.send("send_user_info", true)
+
+
+//Incoming call
+ipc.on("incoming_call", (event, call_id, call_accessories) => {
+
+})
+// ! Message area context menu
+var msg_area_context_menu = document.createElement("div")
+msg_area_context_menu.setAttribute("id", "msg-area-context-menu")
+msg_area_context_menu.setAttribute("class", "context-menu")
+
+const msg_area_context_menu_content = `<div class="item">Undo</div>
+                                       <div class="item item-break">Redo</div>
+                                       
+                                       <div class="item">Copy</div>
+                                       <div class="item">Copy</div>
+                                       <div class="item">Paste</div>
+                                       <div class="item">Delete</div>
+                                       <div class="item item item-break">Select All</div>
+                                       
+                                       <div class="item">Formatting</div>
+                                       <div class="item">Grammar Check</div>
+                                       `
+
+msg_area_context_menu.innerHTML = msg_area_context_menu_content
+// ! *******************************************************
+
+
+// ! Message context menu
+var msg_context_menu = document.createElement("div")
+msg_context_menu.setAttribute("id", "msg-context-menu")
+msg_context_menu.setAttribute("class", "context-menu")
+
+const msg_context_menu_content = `<div class="item">reply</div>
+                                  <div class="item">copy</div>
+                                  <div class="item">paste</div>`
+
+msg_context_menu.innerHTML = msg_context_menu_content
+// ! ***************************************************
+
+// ! Emojis container
+var emoji_container = document.createElement("div")
+emoji_container.setAttribute("id", "emoji-container")
+const emoji_container_content = `<div id="emoji-top">
+                                    <div class="idea"></div>
+                                    <div id="emoji-tabs">
+                                        <button class="btn emoji-tab-button">Emojis</button>
+                                        <button class="btn emoji-tab-button">Stickers</button>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade active show" id="emoji-div"></div>`
+emoji_container.innerHTML = emoji_container_content
+// ! *********************************************
+
+const settings_go_back_btn = document.createElement("a")
+settings_go_back_btn.setAttribute("class", "btn")
+settings_go_back_btn.innerHTML = `<i class="material-icons">arrow_back</i>`
+
+const insert_go_back_btn = () => {
+    document.getElementById(",,").insertAdjacentElement("afterbegin", settings_go_back_btn)
+}
+settings_go_back_btn.addEventListener("click", (event) => {
+    document.getElementById("settingsModal").innerHTML = `<div class="modal-dialog modal-dialog-centered" role="figure">
+                                                                <div class="requests tab-content">
+                                                                    <div class="tab-pane fade active show" id="mainSettingsPage">
+                                                                        <div class="title">
+                                                                            <h1>Settings</h1>
+                                                                            <div id="settings-toolbar">
+                                                                                <div class="dropdown">
+                                                                                    <button type="button" class="btn more-account-options" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="material-icons">more_vert</i></button>
+                                                                                    <div class="dropdown-menu dropdown-menu-right">
+                                                                                        <button id="add-account" class="dropdown-item connect" name="1"><i class="material-icons">add</i>Add account</button>
+                                                                                        <button id="log-out" class="dropdown-item connect" name="1"><i class="material-icons">exit_to_app</i>Log out</button>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <button type="button" class="btn" data-dismiss="modal" aria-label="Close"><i class="material-icons">close</i></button>
+
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="search contacts-search">
+                                                                            <form class="form-inline position-relative">
+                                                                                <button type="button" class="btn btn-link loop contacts-search"><i class="material-icons">search</i></button>
+                                                                                <input type="search" class="form-control" id="people" placeholder="Search for people...">
+                                                                            </form>
+                                                                        </div>
+                                                                        <div class="settings-content">
+                                                                            <div class="active-account">
+                                                                                <img id="setting-profile-picture" src="dist/img/avatars/avatar-female-1.jpg" alt="" class="settings-profile-photo">
+                                                                                <div id="active-account-name-and-status">
+                                                                                    <h6 id="username">Username</h6>
+                                                                                    <tbody>Online</tbody>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="settings-category">
+
+                                                                                <a href="#editProfile" data-toggle="tab" class="btn setting-btn"><i class="material-icons setting-material-icon">info</i>Edit Profile</a>
+                                                                                <a href="#notification" onclick="insert_go_back_btn()" data-toggle="tab" class="btn setting-btn"><i class="material-icons setting-material-icon">notifications_none</i>Notification</a>
+                                                                                <a class="btn setting-btn"><i class="material-icons setting-material-icon">colorize</i>Appearance</a>
+                                                                                <a class="btn setting-btn"><i class="material-icons setting-material-icon">chat_bubble_outline</i>Chat Settings</a>
+                                                                                <a class="btn setting-btn"><i class="material-icons setting-material-icon">lock_outline</i>Privacy & Security</a>
+                                                                            </div>
+                                                                            <div class="settings-category no-bottom-border">
+                                                                                <button class="btn setting-btn"><i class="material-icons setting-material-icon">help</i>Help</button>
+                                                                                <button class="btn setting-btn"><i class="material-icons setting-material-icon">info</i>About</button>
+                                                                            </div>
+                                                                            
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="tab-pane fade" id="editProfile">
+                                                                        <div class="title">
+                                                                            <h1>Edit Profile</h1>
+                                                                            <button type="button" class="btn" data-dismiss="modal" aria-label="Close"><i class="material-icons">close</i></button>
+                                                                        </div>
+                                                                        <div class="set-profile-photo-area">
+                                                                            <img src="dist/img/avatars/avatar-female-1.jpg" alt="Profile Photo" class="settings-profile-photo center-profile-photo">
+                                                                            <button type="button" class="btn change-profile-photo" id="change-profile-photo-user">Change Profile Photo</button>									
+                                                                        </div>
+                                                                        <div class="edit-profile">
+                                                                            <div class="edit-profile-option">
+                                                                                <a href="" class="edit-profile-btn"><i class="material-icons edit-profile-material-icon">account_circle</i></a>
+                                                                                <div id="edit-profile-name">
+                                                                                    <h6>Username</h6>
+                                                                                    <tbody>Name</tbody>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="edit-profile-option border-bottom">
+                                                                                <a href="" class="edit-profile-btn"><i class="material-icons edit-profile-material-icon">account_circle</i></a>
+                                                                                <div id="edit-profile-name">
+                                                                                    <h6>Contact</h6>
+                                                                                    <tbody>Phone or Email</tbody>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="tab-pane fade" id="notification">
+                                                                        <div id=",," class="title">
+                                                                            <h1>Notification</h1>
+                                                                            <button type="button" class="btn" data-dismiss="modal" aria-label="Close"><i class="material-icons">close</i></button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>`
+})
+
+
+/// Adding contact functions
+function get_values() {
+    $('#create-contact-button-div').html('<span class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span>Loading...').addClass('disabled');
+    add_contact_fields.forEach((value, key, parent) => {
+        let field_name = value.getAttribute("name")
+        if (field_name === "participant") {
+            const contact_email = value.value
+            add_contact_obj["email"] = contact_email
+        }
+
+        if (field_name === "contactName") {
+            const contact_name = value.value
+            add_contact_obj["name"] = contact_name
+        }
+
+        if (field_name === "first_message") {
+            const first_message = value.value
+            add_contact_obj["first_message"] = first_message
+            add_contact_obj["request_type"] = "add_contact"
+        }
+    })
+    console.log(add_contact_obj)
+    ipc.send("verify_contact", JSON.stringify(add_contact_obj))
+
+    ipc.on("contact_exists", (event, contact) => {
+        $('#create-contact-button-div').html(add_contact_button_html)
+        add_contact_obj = contact
+        add_contact_obj["profile_picture"] = contact["profile_pic"]
+    })
+}
+
+function save_contact() {
+    console.log(JSON.stringify(add_contact_obj))
+    add_contact_obj["type"] = "contact"
+    $("#startnewchat").modal("hide")
+    $('#create-contact-button-div').html('<span class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span>Loading...').addClass('disabled');
+    ipc.send("save_contact", JSON.stringify(add_contact_obj))
+    no_contact = false
+    update_utility_in_runtime(add_contact_obj)
+}
+
+verify_contact_button.addEventListener("click", get_values)
+
+// * Uses the user info to display information about the user
+ipc.on("user_info", (event, user_db) => {
+    user_obj = user_db
+
+    const profile_pic = document.getElementById("profile_photo")
+    const username = document.getElementById("username")
+    const settings_profile_picture = document.getElementById("setting-profile-picture")
+    if (user_db[user_db["active"]]["profile_pic"] != "") {
+
+        profile_pic.src = `data:image/png;base64,${user_db[user_db["active"]]["profile_pic"]}`
+        settings_profile_picture.src = `data:image/png;base64,${user_db[user_db["active"]]["profile_pic"]}`
+    }
+    username.innerText = user_db[user_db["active"]]["name"]
+    document.getElementById("show-accounts-on-sidenav").innerText = user_db[user_db["active"]]["name"]
+
+    db_keys = Object.keys(user_db)
+
+    db_keys.forEach((value, index, array) => {
+        if (value != "active") {
+            var html_snippet = `<a style="border-top: 1px solid #1f2a35; text-align:left;" class="btn other-accounts" id="${user_db[value]["name"]}-acc-options">
+                                    <span><img src="data:image/png;base64,${user_db[value]["profile_pic"]}" alt="" id="log-account-pic"></span>
+                                    ${user_db[value]["name"]}
+                                </a>`
+            accounts_card_collapsible.insertAdjacentHTML("afterbegin", html_snippet)
+
+            // document.getElementById(user_obj[value]["name"]).addEventListener("click",()=>{
+            //     user_obj["active"] = value
+            //     ipc.send("log_in_to_account",JSON.stringify(user_obj))
+            // })
+        }
+    })
+
+})
+
+const update_utility_in_runtime = (obj)=>{
+    console.log(obj)
+    var path_to_img = obj["profile_picture"]
+    var contact_name = obj["user_saving_name"]
+    var image_path = `data:image/png;base64,${path_to_img}`
+    var contact_card = `<a class='active-account contacts-avatar padding-y-7px' id="${contact_name}-contact-card" data-toggle="tab" href="#contactInfo">
+                            <img src="${image_path}" alt="" class='settings-profile-photo' id="base64image">
+                            <div id='active-account-name-and-status'>
+                                <h6>${contact_name}</h6>
+                                Online
+                            </div>
+                        </a>`
+    contacts_container.insertAdjacentHTML("afterend", contact_card)
+    if (obj["type"] === "clique") {
+        clique_list.push(obj["name"])
+        // Alerts the main process to tell the server to add me to the rooms of the cliques i have joined
+        ipc.send("enter_clique_rooms",clique_list)
+    }
+    document.getElementById(`${contact_name}-contact-card`).addEventListener("click", () => {
+        contact_to_perform_action = contact_name
+    })
+}
+
+ipc.on("added_to_clique",(event,clique_data)=>{
+    console.log(clique_data,"this is the clique data")
+    insert_chat_card(clique_data["name"],"You were added")
+})
+
+/// Adds the contact card (html)
+/// Also add chat card
+ipc.on("display_utility_on_startup", async (event, data) => {
+    contacts = data["db"]
+    account_db = contacts
+    emoji_container.lastChild.innerHTML = data['emoji']
+
+    const keys = Object.keys(contacts)
+    const contacts_container_children = contacts_container.children
+    if (contacts_container_children.length === 0) {
+        keys.forEach((value, index, number) => {
+            if (contacts[value]["type"] === "contact"){
+                var path_to_img = contacts[value]["profile_picture"]
+                var contact_name = value
+                var image_path = `data:image/png;base64,${path_to_img}`
+                var contact_card = `<a class='active-account contacts-avatar padding-y-7px' id="${contact_name}-contact-card" data-toggle="tab" href="#contactInfo">
+                                        <img src="${image_path}" alt="" class='settings-profile-photo' id="base64image">
+                                        <div id='active-account-name-and-status'>
+                                            <h6>${contact_name}</h6>
+                                            Online
+                                        </div>
+                                    </a>`
+                contacts_container.insertAdjacentHTML("afterend", contact_card)
+                contact_email_and_saved_name[account_db[value]["email"]] = value
+                if (contacts[value]["type"] === "clique") {
+                    clique_list.push(value)
+                }
+                document.getElementById(`${contact_name}-contact-card`).addEventListener("click", () => {
+                    contact_to_perform_action = contact_name
+                })
+            }
+            
+        })
+        
+        // Alerts the main process to tell the server to add me to the rooms of the cliques i have joined
+        ipc.send("enter_clique_rooms",clique_list)
+    }
+    if (chats_container.children.length === 0) {
+        keys.forEach((value, index, number) => {
+            console.log(contacts[value])
+            if (contacts[value]["type"] === "clique"){
+                console.log("This is a clique",account_db[value])
+
+                if ("messages" in account_db[value]){
+                    insert_chat_card(value, account_db[value]["messages"][account_db[value]["messages"].length - 1])
+
+                } else{
+                    insert_chat_card(value, {"message":"You were added"})
+
+                }
+
+            } else if (contacts[value]["type"] === "contact"){
+                console.log("This is just a contact")
+
+                if ("messages" in contacts[value]) {
+                    if (contacts[value]["messages"].length > 0) {
+                        console.log(value)
+    
+                        insert_chat_card(value, account_db[value]["messages"][account_db[value]["messages"].length - 1])
+                    }
+    
+                }
+            }
+            
+
+        })
+    }
+
+    const contact_container_for_clique_members_choosing_children = contact_container_for_clique_members_choosing.children
+    if (contact_container_for_clique_members_choosing_children.length === 0) {
+        keys.forEach((value, index, number) => {
+            var path_to_img = contacts[value]["profile_picture"]
+            var contact_name = value
+            var image_path = `data:image/png;base64,${path_to_img}`
+            var contact_card = `<a class='active-account contacts-avatar padding-y-7px' id="${contact_name}-clique-contact-card" data-toggle="tab" href="#contactInfo">
+                                    <img src="${image_path}" alt="" class='settings-profile-photo' id="base64image">
+                                    <div id='active-account-name-and-status'>
+                                        <h6>${contact_name}</h6>
+                                        Online
+                                    </div>
+                                </a>`
+            contact_container_for_clique_members_choosing.insertAdjacentHTML("beforeend", contact_card)
+            document.getElementById(`${contact_name}-clique-contact-card`).addEventListener("click", () => {
+                const show_selected_contacts = document.getElementById("show-chosen-contacts")
+                var contact_display_html = `<div class="chosen-contact">
+                                                <span class="close-badge"><i class="material-icons">close</i></span>
+                                                <img src="${image_path}" alt="" class='settings-profile-photo chosen-contact-profile-photo'>
+                                            </div>`
+                creating_clique_members.push(account_db[contact_name]["email"])
+                show_selected_contacts.insertAdjacentHTML("beforeend", contact_display_html)
+            })
+        })
+    }
+
+})
+
+function start_messaging_from_contacts() {
+    console.log("it is clicked")
+
+    if (verify_displayed_chat_card_email_list.length > 0){
+
+        verify_displayed_chat_card_email_list.forEach((v, n, a) => {
+            if (v === account_db[contact_to_perform_action]["email"]) {
+                show_send_message_panel(contact_to_perform_action)
+    
+    
+            } else {
+                console.log("else block")
+                insert_chat_card(contact_to_perform_action)
+                show_send_message_panel(contact_to_perform_action)
+            }
+    
+        })
+    } else {
+        insert_chat_card(contact_to_perform_action)
+        show_send_message_panel(contact_to_perform_action)
+    }
+
+
+
+}
+
+// Add account
+document.getElementById("add-account").addEventListener("click", () => {
+    ipc.send("add_account", true)
+})
+
+
+// ! Whenever a messag is received
+ipc.on("message", (event, msg) => {
+    console.log("This is it ",msg)
+    
+    if (no_contact) {
+        if (msg["from"] in unread_msg) {
+            unread_msg[msg["from"]].push(msg)
+        } else {
+            unread_msg[msg["from"]] = [msg]
+        }
+
+
+        /// Getting details of unknown contact
+        info = JSON.stringify({ "email": msg["from"],"request_type":"message_from_unknown_source"})
+        ipc.send("get_info", info)
+
+        ipc.on("info_received", (event, db) => {
+            console.log("original db ",db)
+
+            account_db[db["name"]] = db
+            contact_email_and_saved_name[db["email"]] = db["name"]
+            console.log(contact_email_and_saved_name[msg["from"]],"contact email and saved name")
+
+            ipc.send("save_contact_in_runtime",db)
+            db["user_saving_name"] = db["name"]
+            console.log("db with user_saving_name",db)
+
+            ipc.send("save_message_new_contact",db["name"],msg) // uses this because by the time the request is sent to the main save message the contact is not saved yet
+            no_contact = false
+            
+            
+            update_utility_in_runtime(db)
+            if (!verify_displayed_chat_card_email_list.includes(msg["from"])){
+                insert_chat_card(db["name"],msg)
+                verify_displayed_chat_card_email_list.push(msg["from"])
+            }
+        })
+
+
+
+    } else {
+        if (!account_db[contact_email_and_saved_name[msg["from"]]]){
+            // Meaning contact does not exist
+            console.log("contact does not exist")
+
+            /// Getting details of unknown contact
+            info = JSON.stringify({ "email": msg["from"],"request_type":"message_from_unknown_source"})
+            ipc.send("get_info", info)
+
+            ipc.on("info_received", (event, db) => {
+                console.log("original db ",db)
+    
+                account_db[db["name"]] = db
+                contact_email_and_saved_name[db["email"]] = db["name"]
+                console.log(contact_email_and_saved_name[msg["from"]],"contact email and saved name")
+    
+                ipc.send("save_contact_in_runtime",db)
+                db["user_saving_name"] = db["name"]
+                console.log("db with user_saving_name",db)
+    
+                ipc.send("save_message_new_contact",db["name"],msg) // uses this because by the time the request is sent to the main save message the contact is not saved yet
+                no_contact = false
+                
+                
+                update_utility_in_runtime(db)
+                if (!verify_displayed_chat_card_email_list.includes(msg["from"])){
+                    insert_chat_card(db["name"],msg)
+                    verify_displayed_chat_card_email_list.push(msg["from"])
+                }
+            })
+        }
+
+       
+
+
+        // * displaying a message when a message is received from the the chat if not from the chat it is stored in the unread messages
+        // Checking whether it openend
+        if (panel_visibility["visibility"] === true) {
+            // Checking whether the message received is from the chat
+            if (panel_visibility["panel_name"] === contact_email_and_saved_name[msg["from"]]) {
+
+                if (contact_email_and_saved_name[msg["from"]] in account_db) {
+                    msg["read"] = true
+
+                    account_db[contact_email_and_saved_name[msg["from"]]]["messages"].push(msg)
+
+                } else {
+                    msg["read"] = true
+                    account_db[contact_email_and_saved_name[msg["from"]]]["messages"] = [msg]
+                }
+                insert_message("other", msg, "",msg["type"])
+
+            } else {
+                if (msg["from"] in unread_msg) {
+                    unread_msg[msg["from"]].push(msg)
+                } else {
+                    unread_msg[msg["from"]] = [msg]
+                }
+                show_number_of_unread_messages(contact_email_and_saved_name[msg["from"]],unread_msg[msg["from"]].length)
+                update_message_hint_on_chatCard(contact_email_and_saved_name[msg["from"]],msg,message_hint_element)
+
+                if (contact_email_and_saved_name[msg["from"]] in account_db) {
+                    msg["read"] = false
+
+                    account_db[contact_email_and_saved_name[msg["from"]]]["messages"].push(msg)
+
+                } else {
+                    msg["read"] = false
+
+                    account_db[contact_email_and_saved_name[msg["from"]]]["messages"] = [msg]
+                }
+                
+            }
+        } else {
+            console.log("MESSAGE: Going to else")
+            if (msg["from"] in unread_msg) {
+                unread_msg[msg["from"]].push(msg)
+            } else {
+                unread_msg[msg["from"]] = [msg]
+            }
+            show_number_of_unread_messages(contact_email_and_saved_name[msg["from"]],unread_msg[msg["from"]].length)
+            update_message_hint_on_chatCard(contact_email_and_saved_name[msg["from"]],msg,message_hint_element)
+
+            if (contact_email_and_saved_name[msg["from"]] in account_db) {
+                console.log("This contact exists")
+                msg["read"] = false
+                account_db[contact_email_and_saved_name[msg["from"]]]["messages"].push(msg)
+                console.log("this is the message list of the contact",msg)
+
+            } else {
+                msg["read"] = false
+                console.log("Contact does not exist",contact_email_and_saved_name[msg["from"]])
+                account_db[contact_email_and_saved_name[msg["from"]]]["messages"] = [msg]
+                console.log("this is the message list of the contact",account_db[contact_email_and_saved_name[msg["from"]]]["messages"])
+            }
+            
+        }
+    }
+});
+
+
+const insert_chat_card = async (card_name, msg) => {
+    if (card_name === "unknown") {
+        var chat_card = `<a href="#list-chat" class="filterDiscussions all unread single" id="${card_name}" data-toggle="list" role="tab">
+                            <img class="avatar-md" src="" data-toggle="tooltip" data-placement="top" title="Mildred" alt="avatar">
+                            <div class="" id="${card_name}-unread-messages">
+                            </div>
+                            <div class="data">
+                                <h5>${card_name}</h5>
+                                <span>Thu</span>
+                                <p>Unfortunately your session today has been cancelled!</p>
+                            </div>
+                        </a>`
+    } else {
+
+        var chat_card = `<a href="#list-chat" class="filterDiscussions all unread single" id="${card_name}" data-toggle="list" role="tab">
+                            <img class="avatar-md" src="data:image/png;base64,${account_db[card_name]["profile_picture"]}" data-toggle="tooltip" data-placement="top" title="Mildred" alt="avatar">
+                            <div class="new" id="${card_name}-unread-messages">
+                            </div>
+                            <div class="data" id="${card_name}-card-details">
+                                <h5>${card_name}</h5>
+                                <span>Thursday</span>
+                                
+                            </div>
+                        </a>`
+
+    }
+    console.log("Is everython ok")
+    message_hint_element[card_name] = document.createElement("div")
+    message_hint_element[card_name].innerText = msg["message"]
+    chats_container.insertAdjacentHTML("afterbegin", chat_card)
+    verify_displayed_chat_card_email_list.push(account_db[card_name]["email"])
+    document.getElementById(card_name + "-card-details").appendChild(message_hint_element[card_name])
+
+    document.getElementById(card_name).addEventListener("click", (event) => {
+        console.log("Chat card of "+card_name+" clicked")
+        show_send_message_panel(card_name, account_db)
+        chat_to_perform_action = account_db[card_name]["email"]
+    })
+}
+
+
+const show_send_message_panel = (panel_name, messages) => {
+    var panel_html = `<div class="chat" id="chat">
+                    <div class="top">
+                        <div class="container">
+                            <div class="col-md-12">
+                                <div class="inside chat-name">
+                                    <a href="#"><img class="avatar-md" src="data:image/png;base64,${account_db[panel_name]["profile_picture"]}" data-toggle="tooltip" data-placement="top" title="Keith" alt="avatar"></a>
+                                    <div class="data" id="chat-info">
+                                        <h5>${panel_name}</h5>
+                                        <span>Active now</span>
+                                    </div>
+                                    <button class="btn connect d-md-block d-none"><i class="material-icons md-30">search</i></button>
+
+                                    <div class="dropdown">
+                                        <button class="btn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="material-icons md-30">more_vert</i></button>
+                                        <div class="dropdown-menu dropdown-menu-right">
+                                            <button id="voice-call" class="dropdown-item connect" name="1"><i class="material-icons">phone_in_talk</i>Voice Call</button>
+                                            <button id="video-call" class="dropdown-item connect" name="1"><i class="material-icons">videocam</i>Video Call</button>
+                                            <button class="dropdown-item"><i class="material-icons">clear</i>Clear History</button>
+                                            <button class="dropdown-item"><i class="material-icons">block</i>Block Contact</button>
+                                            <button class="dropdown-item"><i class="material-icons">delete</i>Delete Contact</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="content" id="content">
+                        <div class="container">
+                            <div class="col-md-12" id="show_messages">
+
+                            </div>
+                        </div>
+                    </div>
+                    <div id="attachment-container">
+                        <div id="first-row">
+                            <button id="start-camera" class="btn attachment-button"><i class="material-icons">photo_camera</i></button>
+                            <button id="gallery-btn" class="btn attachment-button"><i class="material-icons">photo</i></button>
+                            <button id="send-document" class="btn attachment-button"><i class="material-icons">insert_drive_file</i></button>
+                        </div>
+                        <div id="second-row">
+                            <button id="start-mic" class="btn attachment-button"><i class="material-icons">music_note</i></button>
+                            <button id="start-camera" class="btn attachment-button"><i class="material-icons">movie</i></button>
+                            <button id="other-attachment" class="btn attachment-button"><i class="material-icons">more_horiz</i></button>
+                        </div>
+                    </div>
+                    <div class="container">
+                        <div class="col-md-12">
+                            <div class="bottom" id="msg-area-div">
+                                <form id="buttons-container" class="position-relative w-100">
+                                    <div class="container">
+                                        <textarea oninput="change_audio_message_btn_id(this)" class="form-control msg-area-target-dark" id="message-area" placeholder="Start typing for reply..." rows="1"></textarea>
+                                        
+                                    </div>
+                                    <button class="btn emoticons" id="insert_emoji"><i class="material-icons">insert_emoticon</i></button>
+                                    <button id="send-audio" type="button" class="btn send"><i class="material-icons">mic</i></button>
+                                    <button class="btn send" type="button" id="open-attachment-menu"><i class="material-icons">attach_file</i></button>
+                                </form> 
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="call" id="call">
+                    <div class="content">
+                        <div class="container">
+                            <div class="col-md-12">
+                                <div class="inside">
+                                    <div class="panel">
+                                        <div class="participant">
+                                            <video class="video" src="" id="localStream-video" autoplay playsinline></video>
+                                            <span>Connecting</span>
+                                            <div style="height: 30%; width: 35%;">
+                                                <video class="video" src="" id="remoteStream-video" autoplay playsinline></video>
+                                            </div>
+                                        </div>							
+                                        <div class="options">
+                                            <button class="btn option"><i class="material-icons md-30">mic</i></button>
+                                            <button class="btn option"><i class="material-icons md-30">videocam</i></button>
+                                            <button id="answer-end-call" class="btn option call-end"><i id="call-answer-end-btn" class="material-icons md-30">call_end</i></button>
+                                            <button class="btn option"><i class="material-icons md-30">person_add</i></button>
+                                            <button class="btn option"><i class="material-icons md-30">volume_up</i></button>
+                                        </div>
+                                        <button class="btn back" name="1"><i class="material-icons md-24">chat</i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`
+    list_chat.innerHTML = panel_html
+    send_audio_btn = document.getElementById("send-audio")
+    buttons_container = document.getElementById("buttons-container")
+    //// TODO:: Add p2p_connection_data field to data base
+    console.log(account_db)
+    const Call = {
+        calltype:null,
+        localStream: null,
+        remoteStream: null,
+        constraint:null,
+
+        start: () => {
+            if (Call.calltype === "audio"){
+                Call.constraint = {"audio":true,"video":false}
+            } else if (Call.calltype === "video"){
+                Call.constraint = {"audio":true,"video":true}
+            }
+            return navigator.mediaDevices.getUserMedia(Call.constraint)
+                .then((stream) => {
+                    Call.localStream = stream
+                    Call.remoteStream = new MediaStream()
+                    document.getElementById("localStream-video").srcObject = Call.localStream
+
+                    Call.localStream.getTracks().forEach((track) => {
+                        pc.addTrack(track, Call.localStream)
+                    })
+
+                    pc.ontrack = (event) => {
+                        event.streams[0].getTracks().forEach((track) => {
+                            Call.remoteStream.addTrack(track)
+                        })
+                        document.getElementById("remoteStream-video").srcObject = Call.remoteStream
+                    }
+                })
+
+            Call.initiate_connection()
+
+        },
+
+        initiate_connection: async () => {
+
+            const offer = await pc.createOffer()
+            pc.setLocalDescription(offer)
+
+            const offer_obj = {
+                "offer": offer,
+                "email": chat_to_perform_action,
+                "calltype":Call.calltype
+            }
+
+            ipc.send("send-offer", offer_obj)
+
+            ipc.on("offer-answer-received", (event, answer) => {
+                pc.setRemoteDescription(answer)
+            })
+        }
+
+    }
+
+    voice_callBTN = document.getElementById("voice-call")
+    voice_callBTN.addEventListener("click",(event)=>{
+        Call.calltype = "audio"
+        Call.start()
+    })
+
+
+    video_callBTN = document.getElementById("video-call")
+    video_callBTN.addEventListener("click", (event) => {
+
+        Call.calltype = "video"
+        Call.start()
+    })
+
+
+
+
+    $("#contactsModal").modal("hide")
+    $(".connect").click(() => {
+        // $("#chatInfo").modal("hide")
+        console.log($("#chat" + $(this).attr("name")))
+        $("#chat").hide()
+        $("#call").show()
+    })
+    panel_visibility["visibility"] = true
+    panel_visibility["panel_name"] = panel_name
+    $(".back").click(() => {
+        $("#call").hide()
+        $("#chat").show()
+    })
+    document.getElementById("message-area").focus()
+    show_message = document.getElementById("show_messages")
+
+    // ! Showing message in case user sends one
+    send_message_btn.addEventListener("click", () => {
+        console.log(panel_name)
+        var message = { "uuid": crypto.randomUUID(), "time": Date(), "type": "txt", "message": document.getElementById("message-area").value, "from": user_obj[user_obj["active"]]["email"], "to": "", "name": panel_name }
+        if (clique_list.includes(panel_name)) {
+            message.to = panel_name
+            ipc.send("send_clique_message", message)
+        } else {
+            message.to = account_db[panel_name]["email"]
+
+            ipc.send("send_text_message", message)
+            
+            insert_message("me", message, "",message["type"])
+        }
+
+        document.getElementById("message-area").value = ""
+        update_message_hint_on_chatCard(contact_email_and_saved_name[message["to"]],message,message_hint_element)
+
+    })
+    // ! *******************************
+
+    // ! Showing emoji and hiding emoji
+    // * showinf
+    document.getElementById("msg-area-div").insertAdjacentElement("afterbegin", emoji_container)
+
+    document.getElementById("insert_emoji").addEventListener("mouseover", (event) => {
+        console.log("show emoji")
+        console.log(document.getElementById("message-area").clientTop)
+
+        emoji_container.style.bottom = 70 + "px"
+        emoji_container.style.left = document.getElementById("sidebar").clientWidth + 15 + "px"
+        emoji_container.style.transform = "scale(1)"
+        emoji_container.style.transition = "transform 300ms ease-in-out"
+    })
+    // * hiding
+    document.getElementById("insert_emoji").addEventListener("mouseout", (event) => {
+        emoji_container.style.transform = "scale(0)"
+        emoji_container.style.transition = "transition 300ms ease-in-out"
+    })
+    // ! ************************
+
+
+    document.getElementById("chat-info").addEventListener("click", (event) => {
+        $("#chatInfo").modal("show")
+        if (account_db[panel_name]["unsaved"] === true) {
+            document.getElementById("saved-name").innerText = "Unsaved contact"
+            document.getElementById("show-chat-email").innerText = account_db[panel_name]["email"]
+            document.getElementById("chat-contact").innerText = "No contact was found"
+        }
+    })
+
+    // * Showing attachment menu
+    /// Attachment menu Container
+    var attachment_container = document.getElementById("attachment-container")
+    const close_menu = () => {
+        attachment_container.style.bottom = 70 + "px"
+        attachment_container.style.left = document.getElementById(".").clientWidth - 275 + "px"
+        attachment_container.style.transform = "scale(0)"
+        attachment_container.style.transition = "transform 300ms ease-in-out"
+        show_attachment_menu = false
+    }
+    document.getElementById("open-attachment-menu").addEventListener("click", (event) => {
+        if (show_attachment_menu === false) {
+
+            attachment_container.style.bottom = 70 + "px"
+            attachment_container.style.left = document.getElementById(".").clientWidth - 275 + "px"
+            attachment_container.style.transform = "scale(1)"
+            attachment_container.style.transition = "transform 300ms ease-in-out"
+            show_attachment_menu = true
+        } else {
+            close_menu()
+        }
+    })
+
+    // * Adding functionality to attachment buttons
+    // * Showing gallery div
+    const gallery_btn = document.getElementById("gallery-btn");
+    let layout = document.getElementById(".")
+    gallery_btn.addEventListener("click", () => {
+        layout.style.filter = "blur(8px)";
+        close_menu()
+        gallery_div.style.display = "block";
+
+    })
+
+    // * Closing gallery div
+    const close_gallry_btn = document.getElementById("close-gallery-button");
+    close_gallry_btn.addEventListener("click", () => {
+        layout.style.filter = "blur(0px)";
+        gallery_div.style.display = "none";
+    })
+
+    // * Opening other
+    const other_attachment_btn = document.getElementById("other-attachment")
+    other_attachment_btn.addEventListener("click", (event) => {
+
+        close_menu()
+        var message = { "uuid": crypto.randomUUID(), "time": Date(), "type": "txt", "path": '', "from": user_obj[user_obj["active"]]["email"], "to": account_db[panel_name]["email"], "name": panel_name }
+        ipc.send("open-file", 1)
+        ipc.on("file-chosen", (event, data) => {
+
+            if (data["data_abt_file"].includes("video")) {
+                message["type"] = "video"
+                message["path"] = data["path"]
+                document.getElementById("show-file-details").innerHTML = `<label class="title-label">${data["path"][0].replace(/^.*[\\\/]/, '')}</label>
+                                                                        <video controls width="250" id="sending-video-ele">                
+                                                                            <source src="${data["path"]}" type="${data["data_abt_file"]["mime"]}">
+                                                                        </video>`
+            }
+
+            if (data["data_abt_file"].includes("image")) {
+                message["type"] = "image"
+                message["path"] = data["path"]
+                document.getElementById("show-file-details").innerHTML = `<img id="sending-image-ele" src="${data["path"]}" alt="">`
+            }
+
+            if (data["data_abt_file"].includes("audio")) {
+                console.log(data)
+                message["type"] = "audio"
+                message["path"] = data["path"]
+                let album_cover = null
+                document.getElementById("show-file-details").innerHTML = `<div class="custom-audio-div">
+                                                                            <div class="audio-image" style="background-image: url(${album_cover});">
+
+                                                                            </div>
+                                                                            <div class="audio-controls-div">
+                                                                                <div class="audio-progress">
+                                                                                    <div class="progress" style="height: 3px;">
+                                                                                        <div class="progress-bar" style="width: 0%" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div class="flex-justify-content">
+                                                                                    <button type="button" onClick="moveForward2sec()" class="btn"><i class="material-icons">replay</i></button>
+                                                                                    <button id="send-audio-message-play-pause" type="button" onClick="play_pause_audio('abt_send_msg','')" class="btn"><i class="material-icons">play_arrow</i></button>
+                                                                                    <button type="button" onClick="moveBack2sec()" class="btn" ><i class="material-icons">forward_5</i></button>
+                                                                                </div>
+                                                                            </div>
+                                                                            <audio id="main-audio">
+                                                                                <source src="${data["path"]}">
+                                                                            </audio>
+                                                                          </div>`
+                send_audio_message_play_pause = document.getElementById("send-audio-message-play-pause")
+
+
+                document.getElementById("main-audio").addEventListener("timeupdate",async (event)=>{
+                    let target = event.target
+                    let friends_of_target = await target.parentNode.children
+                    let progress_percent = (target.currentTime/target.duration)*100
+
+                    Array.from(friends_of_target).forEach((value)=>{
+                        if (value.classList.contains("audio-controls-div")){
+                            let audio_progress_div = value.children[0]
+                            let progress_bar = audio_progress_div.children[0].children[0]
+
+                            progress_bar.style.width = progress_percent+"%"
+                        }
+                    })
+                })
+
+            }
+
+            
+
+          
+            $("#confirmFileModal").modal({ backdrop: 'static', keyboard: false })
+
+            document.getElementById("send-media-btn").addEventListener("click", (event) => {
+
+                insert_message("me",message,"",message["type"])
+                $("#confirmFileModal").modal("hide")
+                ipc.send("send-media", message)
+            })
+        })
+
+
+    })
+    // ! *****************************************************
+
+    // ! Conatext Menu
+    document.getElementById("msg-area-div").insertAdjacentElement("afterbegin", msg_area_context_menu)
+    show_message.insertAdjacentElement("afterbegin", msg_context_menu)
+    document.getElementById("message-area").addEventListener("contextmenu", (event) => {
+        event.preventDefault()
+        msg_area_context_menu.style.top = event.pageY - msg_area_context_menu.clientHeight + "px"
+        msg_area_context_menu.style.left = event.clientX + "px"
+        msg_area_context_menu.style.transform = "scale(1)"
+        msg_area_context_menu.style.transition = "transform 200ms ease-in-out"
+    })
+    // ! ****************************************
+
+    // ! SENDING AUDIO
+    const audioRecorder = {
+        message: { "uuid": crypto.randomUUID(), "time": Date(), "type": "audio", "chunks": [], "from": user_obj[user_obj["active"]]["email"], "to": account_db[panel_name]["email"], "name": panel_name },
+        audioChunks: [],
+        mediaRecorder: null,
+        constraint: { audio: true, video: false },
+
+        start: () => {
+            return navigator.mediaDevices.getUserMedia(audioRecorder.constraint)
+                .then((stream) => {
+                    audioRecorder.mediaRecorder = new MediaRecorder(stream)
+                    audioRecorder.mediaRecorder.start()
+
+                    audioRecorder.mediaRecorder.onstart = (event) => {
+                        // console.log(event)
+                        recording_audio = true
+                    }
+
+                    audioRecorder.mediaRecorder.onstop = (event) => {
+                        // console.log(event)
+                        audioRecorder.message["chunks"] = audioRecorder.audioChunks
+                        ipc.send("audio-recording",audioRecorder.audioChunks,audioRecorder.message["uuid"])
+                        if (clique_list.includes(panel_name)) {
+                            message.to = panel_name
+                            ipc.send("send_clique_message", message)
+                            insert_message("me", message, "",message["type"])
+
+                        } else {
+                            message.to = account_db[panel_name]["email"]
+                
+                            ipc.send("send_text_message", JSON.stringify(message))
+                            
+                            insert_message("me", message, "",message["type"])
+                        }                    
+                    }
+
+                    audioRecorder.mediaRecorder.ondataavailable = (event) => {
+                        audioRecorder.audioChunks.push(event.data)
+                        console.log(event.data)
+                    }
+                }).catch((err) => {
+                    if (err) {
+                        console.log(err)
+                    }
+                })
+        },
+
+        stop: () => {
+            audioRecorder.mediaRecorder.stop()
+        }
+    }
+
+    send_audio_btn.addEventListener("mousedown", (event) => {
+        timeout_id = setTimeout(() => {
+            audioRecorder.start()
+        })
+    })
+
+    send_audio_btn.addEventListener("mouseup", (event) => {
+        audioRecorder.stop()
+        clearTimeout(timeout_id)
+    })
+
+
+
+
+
+
+    // ! Displaying the messages that user has in DataBase
+    if (Object.keys(account_db[panel_name]).includes("messages")) {
+
+        account_db[panel_name]["messages"].forEach((value, index, array) => {
+            if (value["from"] === user_obj[user_obj["active"]]["email"]) {
+
+                insert_message("me", value, "",value["type"])
+            } else {
+                console.log(".",value)
+                insert_message("other", value, "",value["type"])
+            }
+        })
+    }
+    // ! ***************************************
+
+    // ! Removing the number of unread messages badge from a chat when user clicks on the chat
+    if (account_db[panel_name]["email"] in unread_msg){
+        remove_number_of_unread_messaes(panel_name)
+        unread_msg[account_db[panel_name]["email"]] = []
+        console.log(unread_msg,"checking if unread messages is cleared")
+    } 
+
+    // // ! Displaying unread messages 
+    // if (account_db[panel_name]["email"] in unread_msg) {
+    //     unread_msg[account_db[panel_name]["email"]].forEach((value, index, array) => {
+    //         insert_message("other", value, "",value["type"])
+    //     })
+    // }
+    // ! ************************************
+
+    if (account_db[panel_name]["unsaved"] === true) {
+        insert_save_block_card(panel_name)
+    }
+}
+
+const insert_message = (sender, msg, time,message_type) => {
+    if (message_type === "txt"){
+
+        if (sender != "me") {
+            var msg_html = `<div class="message" id="${msg["uuid"]}">
+                                <div class="text-main">
+                                    <div class="text-group">
+                                        <div class="text">
+                                            <p>${msg["message"]}</p>
+                                        </div>
+                                    </div>
+                                    <span>09:46 AM</span>
+                                </div>
+                            </div>`
+        } else if (sender === "me") {
+    
+            var msg_html = `<div class="message me" id="${msg["uuid"]}">
+                                <div class="text-main">
+                                    <div class="text-group me">
+                                        <div class="text me">
+                                            <p>${msg["message"]}</p>
+                                        </div>
+                                    </div>
+                                    <span>09:46 AM</span>
+                                </div>
+                            </div>`
+        }
+    }
+
+    if (message_type === "audio"){
+        if (sender != "me"){
+            var msg_html = `<div class="message" id="${msg["uuid"]}">
+                                <div class="text-main">
+                                    <div class="text-group">
+                                        <div class="text">
+                                            <div class="custom-audio-div">
+                                                <div class="audio-image">
+                                                    
+                                                </div>
+                                                <div class="audio-controls-div">
+                                                    <div class="audio-progress">
+                                                        <div class="progress" style="height: 3px;">
+                                                            <div class="progress-bar" style="width: 0%" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex-justify-content">
+                                                        <button type="button" onClick="moveForward2sec()" class="btn"><i class="material-icons">replay</i></button>
+                                                        <button id="${msg["uuid"]}-send-audio-message-play-pause" type="button" class="btn"><i class="material-icons">play_arrow</i></button>
+                                                        <button type="button" class="btn" ><i class="material-icons">forward_5</i></button>
+                                                    </div>
+                                                </div>
+                                                <audio id="${msg["uuid"]}-audio">
+                                                    <source src="${msg["path"]}">
+                                                </audio>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span>09:46 AM</span>
+                                </div>
+                            </div>`
+            
+        } else if (sender === "me"){
+            var msg_html = `<div class="message me" id="${msg["uuid"]}">
+                                <div class="text-main">
+                                    <div class="text-group me">
+                                        <div class="text me">
+                                            <div class="custom-audio-div" style="width:300px;">
+                                                <div class="audio-image">
+                                                    
+                                                </div>
+                                                <div class="audio-controls-div">
+                                                    <div class="audio-progress" style="margin-left:10px;">
+                                                        <div class="progress" style="height: 3px;">
+                                                            <div class="progress-bar" style="width: 0%" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex-justify-content">
+                                                        <button type="button" onClick="moveForward2sec()" class="btn"><i class="material-icons">replay</i></button>
+                                                        <button id="${msg["uuid"]}-send-audio-message-play-pause" type="button" class="btn"><i class="material-icons">play_arrow</i></button>
+                                                        <button type="button" class="btn" ><i class="material-icons">forward_5</i></button>
+                                                    </div>
+                                                </div>
+                                                <audio id="${msg["uuid"]}-audio">
+                                                    <source src="${msg["path"]}">
+                                                </audio>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span>09:46 AM</span>
+                                </div>
+                            </div>`
+        }
+
+    }
+
+    if (message_type === "image"){
+        if (sender != "me"){
+            var msg_html = `<div class="message" id="${msg["uuid"]}">
+                                <div class="text-main">
+                                    <div class="text-group">
+                                        <div class="text" >
+                                            <div id="brag" class="flex-justify-content">
+                                                <button type="button" class="btn download-play-video-btn"><i class="material-icons">photo</i></button>
+                                                <div style="width: 135px; padding-left: 20px; padding-top: 8px;">Image</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span>11:07 PM</span>
+                                </div>
+                            </div>`
+        } else if (sender === "me"){
+            var msg_html = `<div class="message me" id="${msg["uuid"]}">
+                                <div class="text-main">
+                                    <div class="text-group me">
+                                        <div class="text me" >
+                                            <div id="brag" class="flex-justify-content">
+                                                <button type="button" class="btn download-play-video-btn"><i class="material-icons">photo</i></button>
+                                                <div style="width: 135px; padding-left: 20px; padding-top: 8px;">Image</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span>11:07 PM</span>
+                                </div>
+                            </div>`
+        }
+    }
+
+    if (message_type === "video"){
+        if(sender != "me"){
+            var msg_html = `<div class="message" id="${msg["uuid"]}">
+                                <div class="text-main">
+                                    <div class="text-group">
+                                        <div class="text" >
+                                            <div id="brag" class="flex-justify-content">
+                                                <button type="button" class="btn download-play-video-btn"><i class="material-icons">movie</i></button>
+                                                <div style="width: 135px; padding-left: 20px; padding-top: 8px;">Video</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span>11:07 PM</span>
+                                </div>
+                            </div>`
+        } else if (sender === "me"){
+            var msg_html = `<div class="message me" id="${msg["uuid"]}">
+                                <div class="text-main">
+                                    <div class="text-group me">
+                                        <div class="text me" >
+                                            <div id="brag" class="flex-justify-content">
+                                                <button type="button" class="btn download-play-video-btn"><i class="material-icons">movie</i></button>
+                                                <div style="width: 135px; padding-left: 20px; padding-top: 8px;">Video</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span>11:07 PM</span>
+                                </div>
+                            </div>`
+        }
+    }
+
+
+    show_message.insertAdjacentHTML("beforeend", msg_html)
+    document.getElementById(msg["uuid"]).addEventListener("contextmenu", (event) => {
+        msg_context_menu.style.top = event.pageY - msg_context_menu.clientHeight + "px"
+        msg_context_menu.style.left = event.offsetX + "px"
+        msg_context_menu.style.transform = "scale(1)"
+        msg_context_menu.style.transition = "transform 200ms ease-in-out"
+
+    })
+
+    if (message_type === "audio"){
+        document.getElementById(`${msg["uuid"]}-send-audio-message-play-pause`).addEventListener("click",(event)=>{
+            play_pause_audio(`${msg["uuid"]}-send-audio-message-play-pause`,`${msg["uuid"]}-audio`)
+        })
+
+        document.getElementById(`${msg["uuid"]}-audio`).addEventListener("timeupdate",async (event)=>{
+            let target = event.target
+            let friends_of_target = await target.parentNode.children
+            let progress_percent = (target.currentTime/target.duration)*100
+
+            Array.from(friends_of_target).forEach((value)=>{
+                if (value.classList.contains("audio-controls-div")){
+                    let audio_progress_div = value.children[0]
+                    let progress_bar = audio_progress_div.children[0].children[0]
+
+                    progress_bar.style.width = progress_percent+"%"
+                }
+            })
+        })
+    }
+
+}
+
+const show_number_of_unread_messages = (card_name, number) => {
+    var card = document.getElementById(card_name + "-unread-messages");
+    card.style.visibility = "visible";
+    card.innerHTML = `<span class="badge badge-pill badge-info">${number}</span>`
+}
+
+const remove_number_of_unread_messaes = (card_name) =>{
+    var card = document.getElementById(card_name+"-unread-messages")
+    card.style.visibility = "hidden";
+}
+
+const update_message_hint_on_chatCard = (chat_card_name, msg, elements) => {
+    elements[chat_card_name].innerText = msg["message"]
+    console.log(chat_card_name + "-message-hint", message_hint_element)
+}
+
+
+const insert_save_block_card = (name) => {
+    var html = `<div class="block-save-container">
+                    <div class="idea">
+                        This contact is not among your contact list meaning messages send or received from this contact will disappear
+                        after some time. Choose what to do with this contact
+                    </div>
+                    <div class="message">
+                        <button class="btn block-and-save">Block</button>
+                        <button class="btn block-and-save">Add to Contact</button>
+                    </div>
+                </div>`
+
+    show_message.insertAdjacentHTML("beforeend", html)
+}
+
+
+const create_clique = () => {
+    var clique_obj = {}
+
+    new_clique_fields.forEach((value, key, par) => {
+        console.log()
+
+        let space_name = value.getAttribute("name")
+
+        if (space_name === "cliqueName") {
+            clique_obj["name"] = value.value
+
+        }
+        if (space_name === "cliqueLink") {
+            clique_obj["link"] = value.value
+
+        }
+        if (space_name === "cliqueAbout") {
+            clique_obj["about"] = value.value
+        }
+    })
+    document.getElementById("finish-choosing-clique-members").addEventListener("click", () => {
+        clique_obj["members"] = creating_clique_members
+        console.log(clique_obj)
+    })
+
+    document.getElementById("change-profile-photo-clique").addEventListener("click", () => {
+        ipc.send("choose_profile_pic", 1)
+
+        ipc.on("change_picture", (event, pic) => {
+            base64_image = fs.readFileSync(pic, { encoding: "base64" })
+            clique_obj["profile_pic"] = base64_image
+            document.getElementById("profile-photo-clique").setAttribute("src", `data:image/png;base64,${base64_image}`)
+            console.log(clique_obj)
+        })
+    })
+    document.getElementById("create-clique").addEventListener("click", () => {
+        clique_obj["settings"] = {
+            "message": {
+
+            },
+            "profile_pic": {
+
+            }
+        }
+        if (allow_member_to_send_msg_checkBox.checked) {
+            clique_obj["settings"]["message"]["allow_member_msg"] = true
+        } else {
+            clique_obj["settings"]["message"]["allow_admin_msg"] = true
+        }
+
+        if (allow_members_to_change_profile_pic.checked) {
+            clique_obj["settings"]["profile_pic"]["allow_member_prof_pic"] = true
+        } else {
+            clique_obj["settings"]["profile_pic"]["allow_admin_prof_pic"] = true
+        }
+        ipc.send("create-clique", clique_obj)
+        $('#create-clique').html('<span class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span>Loading...').addClass('disabled');
+    })
+
+    ipc.on("creation-done", (event, data) => {
+        $("#creatCliqueModal").modal("hide")
+        $('#create-clique').html('Continue').addClass('enabled');
+        insert_chat_card(clique_obj["name"],"")
+    })
+}
+
+// ! HANDLING THE TOGGLING OF CREAT CLIQUE SETTINGS
+allow_member_to_send_msg_checkBox.addEventListener('change', e => {
+    if (e.target.checked === true) {
+        allow_only_admins_to_send_msg_checkBox.checked = false
+    }
+    if (e.target.checked === false) {
+        allow_only_admins_to_send_msg_checkBox.checked = true
+    }
+});
+
+allow_only_admins_to_send_msg_checkBox.addEventListener('change', e => {
+    if (e.target.checked === true) {
+        allow_member_to_send_msg_checkBox.checked = false
+    }
+    if (e.target.checked === false) {
+        allow_member_to_send_msg_checkBox.checked = true
+    }
+});
+
+allow_members_to_change_profile_pic.addEventListener('change', e => {
+    if (e.target.checked === true) {
+        allow_only_admins_to_change_profile_pic.checked = false
+    }
+    if (e.target.checked === false) {
+        allow_only_admins_to_change_profile_pic.checked = true
+    }
+});
+
+allow_only_admins_to_change_profile_pic.addEventListener('change', e => {
+    if (e.target.checked === true) {
+        allow_members_to_change_profile_pic.checked = false
+    }
+    if (e.target.checked === false) {
+        allow_members_to_change_profile_pic.checked = true
+    }
+});
+// ****************************************************
+
+// ! creating new clique
+document.getElementById("clique-continue-btn").addEventListener("click", create_clique)
+
+const change_audio_message_btn_id = async (e) => {
+    if (e.value.length > 0) {
+        buttons_container.childNodes.forEach((value, key, parent) => {
+            if (value === send_audio_btn) {
+
+                send_audio_btn.parentNode.replaceChild(send_message_btn, send_audio_btn)
+            }
+        })
+
+
+    }
+    if (e.value.length === 0) {
+        send_message_btn.parentNode.replaceChild(send_audio_btn, send_message_btn)
+    }
+}
+
+
+
+
+const play_pause_audio = (element,element_id)=>{
+    // element id is only used when the audio widget is one of those in show messages
+    if (audio_playing === false){
+        
+        if (element === "abt_send_msg"){        
+            send_audio_message_play_pause.innerHTML = `<i class="material-icons">pause</i>`
+            document.getElementById("main-audio").play()
+            audio_playing = true
+        } else {
+            audio_playing = true
+            document.getElementById(element).innerHTML = `<i class="material-icons">pause</i>`
+            document.getElementById(element_id).play()
+        }
+    }else{
+        if (element === "abt_send_msg"){        
+            send_audio_message_play_pause.innerHTML = `<i class="material-icons">play_arrow</i>`
+            document.getElementById("main-audio").pause()
+            audio_playing = false
+        } else {
+            audio_playing = false
+            document.getElementById(element).innerHTML = `<i class="material-icons">play_arrow</i>`
+            document.getElementById(element_id).pause()
+        }
+    }
+}
