@@ -3,7 +3,13 @@ const DesktopCapture = require("electron").desktopCapturer
 const crypto = require("crypto");
 const { desktopCapturer } = require("electron");
 const fs = require("fs");
+const axios = require("axios")
+const path = require("path")
+const http = require("http")
 const media_tags = require("jsmediatags")
+const {LocalFileData} = require("get-file-object-from-local-path");
+const { type } = require("os");
+const { time } = require("console");
 const allow_member_to_send_msg_checkBox = document.getElementById('allow-members-send-message');
 const allow_only_admins_to_send_msg_checkBox = document.getElementById("allow-only-admins-send-message")
 const allow_only_admins_to_change_profile_pic = document.getElementById("allow-only-admins-change-profile-pic")
@@ -25,7 +31,26 @@ const stun_server = {
     iceCandidatePoolSize: 10,
 }
 var pc = null;
-
+// var message = { "uuid": crypto.randomUUID(), "time": Date(), "type": "txt", "message": document.getElementById("message-area").value, "from": user_obj[user_obj["active"]]["email"], "to": "", "name": panel_name }
+function TextMessage (type = "txt",uuid = crypto.randomUUID(),time = Date(),message,from= user_obj[user_obj["active"]]["email"],to,name){
+    this.uuid = uuid
+    this.time = time
+    this.type = type
+    this.message = message
+    this.from = from
+    this.to = to
+    this.name = name
+}
+// var message = { "uuid": crypto.randomUUID(), "time": Date(), "type": "txt", "path": '', "from": user_obj[user_obj["active"]]["email"], "to": account_db[panel_name]["email"], "name": panel_name }
+function MediaMessage (type,uuid = crypto.randomUUID(),time = Date(),from= user_obj[user_obj["active"]]["email"],to,name,path){
+    this.uuid = uuid
+    this.time = time
+    this.type = type
+    this.path = path
+    this.from = from
+    this.to = to
+    this.name = name
+}
 document.addEventListener("DOMContentLoaded", () => {
     pc = new RTCPeerConnection(stun_server)
 
@@ -52,41 +77,41 @@ ipc.on("rtc-offer", async (event, offer) => {
     //     show_send_message_panel(verify_con)
     // }
 
-    
+
     $("#chat").hide()
     $("#call").show()
-    
+
     let constraint = null
-    if (offer["calltype"] === "audio"){
-        constraint = {"audio":true,"video":false}
-    } else if (offer["calltype"] === "video"){
-        constraint = {"audio":true,"video":true}
+    if (offer["calltype"] === "audio") {
+        constraint = { "audio": true, "video": false }
+    } else if (offer["calltype"] === "video") {
+        constraint = { "audio": true, "video": true }
     }
-    document.getElementById("answer-end-call").addEventListener("click",async (event)=>{
-        if (call_ongoing === false){
+    document.getElementById("answer-end-call").addEventListener("click", async (event) => {
+        if (call_ongoing === false) {
 
             return navigator.mediaDevices.getUserMedia(constraint)
-            .then((stream) => {
-                Call.localStream = stream
-                Call.remoteStream = new MediaStream()
-        
-                Call.localStream.getTracks().forEach((track) => {
-                    pc.addTrack(track, Call.localStream)
-                })
-        
-                pc.ontrack = (event) => {
-                    event.streams[0].getTracks().forEach((track) => {
-                        Call.remoteStream.addTrack(track)
+                .then((stream) => {
+                    Call.localStream = stream
+                    Call.remoteStream = new MediaStream()
+
+                    Call.localStream.getTracks().forEach((track) => {
+                        pc.addTrack(track, Call.localStream)
                     })
-                }
-            })
+
+                    pc.ontrack = (event) => {
+                        event.streams[0].getTracks().forEach((track) => {
+                            Call.remoteStream.addTrack(track)
+                        })
+                    }
+                })
             pc.setRemoteDescription(offer["offer"])
             const answer = await pc.createAnswer()
             pc.setLocalDescription(answer)
-        
+
             ipc.send("answer", { "answer": answer, "email": offer["email"] })
             call_ongoing = true
-        } else{
+        } else {
             call_ongoing = false
         }
 
@@ -185,7 +210,7 @@ ipc.on("no-contact", (event) => {
 })
 
 // Update db in runtime if an changes occurs in main process
-ipc.on("update_db",(event,db)=>{
+ipc.on("update_db", (event, db) => {
     account_db = db
 })
 
@@ -413,7 +438,7 @@ ipc.on("user_info", (event, user_db) => {
 
 })
 
-const update_utility_in_runtime = (obj)=>{
+const update_utility_in_runtime = (obj) => {
     console.log(obj)
     var path_to_img = obj["profile_picture"]
     var contact_name = obj["user_saving_name"]
@@ -429,16 +454,16 @@ const update_utility_in_runtime = (obj)=>{
     if (obj["type"] === "clique") {
         clique_list.push(obj["name"])
         // Alerts the main process to tell the server to add me to the rooms of the cliques i have joined
-        ipc.send("enter_clique_rooms",clique_list)
+        ipc.send("enter_clique_rooms", clique_list)
     }
     document.getElementById(`${contact_name}-contact-card`).addEventListener("click", () => {
         contact_to_perform_action = contact_name
     })
 }
 
-ipc.on("added_to_clique",(event,clique_data)=>{
-    console.log(clique_data,"this is the clique data")
-    insert_chat_card(clique_data["name"],"You were added")
+ipc.on("added_to_clique", (event, clique_data) => {
+    console.log(clique_data, "this is the clique data")
+    insert_chat_card(clique_data["name"], "You were added")
 })
 
 /// Adds the contact card (html)
@@ -452,7 +477,7 @@ ipc.on("display_utility_on_startup", async (event, data) => {
     const contacts_container_children = contacts_container.children
     if (contacts_container_children.length === 0) {
         keys.forEach((value, index, number) => {
-            if (contacts[value]["type"] === "contact"){
+            if (contacts[value]["type"] === "contact") {
                 var path_to_img = contacts[value]["profile_picture"]
                 var contact_name = value
                 var image_path = `data:image/png;base64,${path_to_img}`
@@ -472,39 +497,39 @@ ipc.on("display_utility_on_startup", async (event, data) => {
                     contact_to_perform_action = contact_name
                 })
             }
-            
+
         })
-        
+
         // Alerts the main process to tell the server to add me to the rooms of the cliques i have joined
-        ipc.send("enter_clique_rooms",clique_list)
+        ipc.send("enter_clique_rooms", clique_list)
     }
     if (chats_container.children.length === 0) {
         keys.forEach((value, index, number) => {
             console.log(contacts[value])
-            if (contacts[value]["type"] === "clique"){
-                console.log("This is a clique",account_db[value])
+            if (contacts[value]["type"] === "clique") {
+                console.log("This is a clique", account_db[value])
 
-                if ("messages" in account_db[value]){
+                if ("messages" in account_db[value]) {
                     insert_chat_card(value, account_db[value]["messages"][account_db[value]["messages"].length - 1])
 
-                } else{
-                    insert_chat_card(value, {"message":"You were added"})
+                } else {
+                    insert_chat_card(value, { "message": "You were added" })
 
                 }
 
-            } else if (contacts[value]["type"] === "contact"){
+            } else if (contacts[value]["type"] === "contact") {
                 console.log("This is just a contact")
 
                 if ("messages" in contacts[value]) {
                     if (contacts[value]["messages"].length > 0) {
                         console.log(value)
-    
+
                         insert_chat_card(value, account_db[value]["messages"][account_db[value]["messages"].length - 1])
                     }
-    
+
                 }
             }
-            
+
 
         })
     }
@@ -540,19 +565,19 @@ ipc.on("display_utility_on_startup", async (event, data) => {
 function start_messaging_from_contacts() {
     console.log("it is clicked")
 
-    if (verify_displayed_chat_card_email_list.length > 0){
+    if (verify_displayed_chat_card_email_list.length > 0) {
 
         verify_displayed_chat_card_email_list.forEach((v, n, a) => {
             if (v === account_db[contact_to_perform_action]["email"]) {
                 show_send_message_panel(contact_to_perform_action)
-    
-    
+
+
             } else {
                 console.log("else block")
                 insert_chat_card(contact_to_perform_action)
                 show_send_message_panel(contact_to_perform_action)
             }
-    
+
         })
     } else {
         insert_chat_card(contact_to_perform_action)
@@ -571,8 +596,8 @@ document.getElementById("add-account").addEventListener("click", () => {
 
 // ! Whenever a messag is received
 ipc.on("message", (event, msg) => {
-    console.log("This is it ",msg)
-    
+    console.log("This is it ", msg)
+
     if (no_contact) {
         if (msg["from"] in unread_msg) {
             unread_msg[msg["from"]].push(msg)
@@ -582,27 +607,27 @@ ipc.on("message", (event, msg) => {
 
 
         /// Getting details of unknown contact
-        info = JSON.stringify({ "email": msg["from"],"request_type":"message_from_unknown_source"})
+        info = JSON.stringify({ "email": msg["from"], "request_type": "message_from_unknown_source" })
         ipc.send("get_info", info)
 
         ipc.on("info_received", (event, db) => {
-            console.log("original db ",db)
+            console.log("original db ", db)
 
             account_db[db["name"]] = db
             contact_email_and_saved_name[db["email"]] = db["name"]
-            console.log(contact_email_and_saved_name[msg["from"]],"contact email and saved name")
+            console.log(contact_email_and_saved_name[msg["from"]], "contact email and saved name")
 
-            ipc.send("save_contact_in_runtime",db)
+            ipc.send("save_contact_in_runtime", db)
             db["user_saving_name"] = db["name"]
-            console.log("db with user_saving_name",db)
+            console.log("db with user_saving_name", db)
 
-            ipc.send("save_message_new_contact",db["name"],msg) // uses this because by the time the request is sent to the main save message the contact is not saved yet
+            ipc.send("save_message_new_contact", db["name"], msg) // uses this because by the time the request is sent to the main save message the contact is not saved yet
             no_contact = false
-            
-            
+
+
             update_utility_in_runtime(db)
-            if (!verify_displayed_chat_card_email_list.includes(msg["from"])){
-                insert_chat_card(db["name"],msg)
+            if (!verify_displayed_chat_card_email_list.includes(msg["from"])) {
+                insert_chat_card(db["name"], msg)
                 verify_displayed_chat_card_email_list.push(msg["from"])
             }
         })
@@ -610,38 +635,38 @@ ipc.on("message", (event, msg) => {
 
 
     } else {
-        if (!account_db[contact_email_and_saved_name[msg["from"]]]){
+        if (!account_db[contact_email_and_saved_name[msg["from"]]]) {
             // Meaning contact does not exist
             console.log("contact does not exist")
 
             /// Getting details of unknown contact
-            info = JSON.stringify({ "email": msg["from"],"request_type":"message_from_unknown_source"})
+            info = JSON.stringify({ "email": msg["from"], "request_type": "message_from_unknown_source" })
             ipc.send("get_info", info)
 
             ipc.on("info_received", (event, db) => {
-                console.log("original db ",db)
-    
+                console.log("original db ", db)
+
                 account_db[db["name"]] = db
                 contact_email_and_saved_name[db["email"]] = db["name"]
-                console.log(contact_email_and_saved_name[msg["from"]],"contact email and saved name")
-    
-                ipc.send("save_contact_in_runtime",db)
+                console.log(contact_email_and_saved_name[msg["from"]], "contact email and saved name")
+
+                ipc.send("save_contact_in_runtime", db)
                 db["user_saving_name"] = db["name"]
-                console.log("db with user_saving_name",db)
-    
-                ipc.send("save_message_new_contact",db["name"],msg) // uses this because by the time the request is sent to the main save message the contact is not saved yet
+                console.log("db with user_saving_name", db)
+
+                ipc.send("save_message_new_contact", db["name"], msg) // uses this because by the time the request is sent to the main save message the contact is not saved yet
                 no_contact = false
-                
-                
+
+
                 update_utility_in_runtime(db)
-                if (!verify_displayed_chat_card_email_list.includes(msg["from"])){
-                    insert_chat_card(db["name"],msg)
+                if (!verify_displayed_chat_card_email_list.includes(msg["from"])) {
+                    insert_chat_card(db["name"], msg)
                     verify_displayed_chat_card_email_list.push(msg["from"])
                 }
             })
         }
 
-       
+
 
 
         // * displaying a message when a message is received from the the chat if not from the chat it is stored in the unread messages
@@ -659,7 +684,7 @@ ipc.on("message", (event, msg) => {
                     msg["read"] = true
                     account_db[contact_email_and_saved_name[msg["from"]]]["messages"] = [msg]
                 }
-                insert_message("other", msg, "",msg["type"])
+                insert_message("other", msg, "", msg["type"])
 
             } else {
                 if (msg["from"] in unread_msg) {
@@ -667,8 +692,8 @@ ipc.on("message", (event, msg) => {
                 } else {
                     unread_msg[msg["from"]] = [msg]
                 }
-                show_number_of_unread_messages(contact_email_and_saved_name[msg["from"]],unread_msg[msg["from"]].length)
-                update_message_hint_on_chatCard(contact_email_and_saved_name[msg["from"]],msg,message_hint_element)
+                show_number_of_unread_messages(contact_email_and_saved_name[msg["from"]], unread_msg[msg["from"]].length)
+                update_message_hint_on_chatCard(contact_email_and_saved_name[msg["from"]], msg, message_hint_element)
 
                 if (contact_email_and_saved_name[msg["from"]] in account_db) {
                     msg["read"] = false
@@ -680,7 +705,7 @@ ipc.on("message", (event, msg) => {
 
                     account_db[contact_email_and_saved_name[msg["from"]]]["messages"] = [msg]
                 }
-                
+
             }
         } else {
             console.log("MESSAGE: Going to else")
@@ -689,22 +714,22 @@ ipc.on("message", (event, msg) => {
             } else {
                 unread_msg[msg["from"]] = [msg]
             }
-            show_number_of_unread_messages(contact_email_and_saved_name[msg["from"]],unread_msg[msg["from"]].length)
-            update_message_hint_on_chatCard(contact_email_and_saved_name[msg["from"]],msg,message_hint_element)
+            show_number_of_unread_messages(contact_email_and_saved_name[msg["from"]], unread_msg[msg["from"]].length)
+            update_message_hint_on_chatCard(contact_email_and_saved_name[msg["from"]], msg, message_hint_element)
 
             if (contact_email_and_saved_name[msg["from"]] in account_db) {
                 console.log("This contact exists")
                 msg["read"] = false
                 account_db[contact_email_and_saved_name[msg["from"]]]["messages"].push(msg)
-                console.log("this is the message list of the contact",msg)
+                console.log("this is the message list of the contact", msg)
 
             } else {
                 msg["read"] = false
-                console.log("Contact does not exist",contact_email_and_saved_name[msg["from"]])
+                console.log("Contact does not exist", contact_email_and_saved_name[msg["from"]])
                 account_db[contact_email_and_saved_name[msg["from"]]]["messages"] = [msg]
-                console.log("this is the message list of the contact",account_db[contact_email_and_saved_name[msg["from"]]]["messages"])
+                console.log("this is the message list of the contact", account_db[contact_email_and_saved_name[msg["from"]]]["messages"])
             }
-            
+
         }
     }
 });
@@ -744,7 +769,7 @@ const insert_chat_card = async (card_name, msg) => {
     document.getElementById(card_name + "-card-details").appendChild(message_hint_element[card_name])
 
     document.getElementById(card_name).addEventListener("click", (event) => {
-        console.log("Chat card of "+card_name+" clicked")
+        console.log("Chat card of " + card_name + " clicked")
         show_send_message_panel(card_name, account_db)
         chat_to_perform_action = account_db[card_name]["email"]
     })
@@ -846,16 +871,16 @@ const show_send_message_panel = (panel_name, messages) => {
     //// TODO:: Add p2p_connection_data field to data base
     console.log(account_db)
     const Call = {
-        calltype:null,
+        calltype: null,
         localStream: null,
         remoteStream: null,
-        constraint:null,
+        constraint: null,
 
         start: () => {
-            if (Call.calltype === "audio"){
-                Call.constraint = {"audio":true,"video":false}
-            } else if (Call.calltype === "video"){
-                Call.constraint = {"audio":true,"video":true}
+            if (Call.calltype === "audio") {
+                Call.constraint = { "audio": true, "video": false }
+            } else if (Call.calltype === "video") {
+                Call.constraint = { "audio": true, "video": true }
             }
             return navigator.mediaDevices.getUserMedia(Call.constraint)
                 .then((stream) => {
@@ -887,7 +912,7 @@ const show_send_message_panel = (panel_name, messages) => {
             const offer_obj = {
                 "offer": offer,
                 "email": chat_to_perform_action,
-                "calltype":Call.calltype
+                "calltype": Call.calltype
             }
 
             ipc.send("send-offer", offer_obj)
@@ -900,7 +925,7 @@ const show_send_message_panel = (panel_name, messages) => {
     }
 
     voice_callBTN = document.getElementById("voice-call")
-    voice_callBTN.addEventListener("click",(event)=>{
+    voice_callBTN.addEventListener("click", (event) => {
         Call.calltype = "audio"
         Call.start()
     })
@@ -935,7 +960,10 @@ const show_send_message_panel = (panel_name, messages) => {
     // ! Showing message in case user sends one
     send_message_btn.addEventListener("click", () => {
         console.log(panel_name)
-        var message = { "uuid": crypto.randomUUID(), "time": Date(), "type": "txt", "message": document.getElementById("message-area").value, "from": user_obj[user_obj["active"]]["email"], "to": "", "name": panel_name }
+        var message = new TextMessage()
+        message.message = document.getElementById("message-area").value
+        message.name = panel_name
+        // var message = { "uuid": crypto.randomUUID(), "time": Date(), "type": "txt", "message": document.getElementById("message-area").value, "from": user_obj[user_obj["active"]]["email"], "to": "", "name": panel_name }
         if (clique_list.includes(panel_name)) {
             message.to = panel_name
             ipc.send("send_clique_message", message)
@@ -943,12 +971,12 @@ const show_send_message_panel = (panel_name, messages) => {
             message.to = account_db[panel_name]["email"]
 
             ipc.send("send_text_message", message)
-            
-            insert_message("me", message, "",message["type"])
+
+            insert_message("me", message, "", message["type"])
         }
 
         document.getElementById("message-area").value = ""
-        update_message_hint_on_chatCard(contact_email_and_saved_name[message["to"]],message,message_hint_element)
+        update_message_hint_on_chatCard(contact_email_and_saved_name[message["to"]], message, message_hint_element)
 
     })
     // ! *******************************
@@ -1029,86 +1057,115 @@ const show_send_message_panel = (panel_name, messages) => {
     other_attachment_btn.addEventListener("click", (event) => {
 
         close_menu()
-        var message = { "uuid": crypto.randomUUID(), "time": Date(), "type": "txt", "path": '', "from": user_obj[user_obj["active"]]["email"], "to": account_db[panel_name]["email"], "name": panel_name }
+        
         ipc.send("open-file", 1)
-        ipc.on("file-chosen", (event, data) => {
-
-            if (data["data_abt_file"].includes("video")) {
-                message["type"] = "video"
-                message["path"] = data["path"]
-                document.getElementById("show-file-details").innerHTML = `<label class="title-label">${data["path"][0].replace(/^.*[\\\/]/, '')}</label>
-                                                                        <video controls width="250" id="sending-video-ele">                
-                                                                            <source src="${data["path"]}" type="${data["data_abt_file"]["mime"]}">
-                                                                        </video>`
-            }
-
-            if (data["data_abt_file"].includes("image")) {
-                message["type"] = "image"
-                message["path"] = data["path"]
-                document.getElementById("show-file-details").innerHTML = `<img id="sending-image-ele" src="${data["path"]}" alt="">`
-            }
-
-            if (data["data_abt_file"].includes("audio")) {
-                console.log(data)
-                message["type"] = "audio"
-                message["path"] = data["path"]
-                let album_cover = null
-                document.getElementById("show-file-details").innerHTML = `<div class="custom-audio-div">
-                                                                            <div class="audio-image" style="background-image: url(${album_cover});">
-
-                                                                            </div>
-                                                                            <div class="audio-controls-div">
-                                                                                <div class="audio-progress">
-                                                                                    <div class="progress" style="height: 3px;">
-                                                                                        <div class="progress-bar" style="width: 0%" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
-                                                                                    </div>
-                                                                                </div>
-                                                                                <div class="flex-justify-content">
-                                                                                    <button type="button" onClick="moveForward2sec()" class="btn"><i class="material-icons">replay</i></button>
-                                                                                    <button id="send-audio-message-play-pause" type="button" onClick="play_pause_audio('abt_send_msg','')" class="btn"><i class="material-icons">play_arrow</i></button>
-                                                                                    <button type="button" onClick="moveBack2sec()" class="btn" ><i class="material-icons">forward_5</i></button>
-                                                                                </div>
-                                                                            </div>
-                                                                            <audio id="main-audio">
-                                                                                <source src="${data["path"]}">
-                                                                            </audio>
-                                                                          </div>`
-                send_audio_message_play_pause = document.getElementById("send-audio-message-play-pause")
-
-
-                document.getElementById("main-audio").addEventListener("timeupdate",async (event)=>{
-                    let target = event.target
-                    let friends_of_target = await target.parentNode.children
-                    let progress_percent = (target.currentTime/target.duration)*100
-
-                    Array.from(friends_of_target).forEach((value)=>{
-                        if (value.classList.contains("audio-controls-div")){
-                            let audio_progress_div = value.children[0]
-                            let progress_bar = audio_progress_div.children[0].children[0]
-
-                            progress_bar.style.width = progress_percent+"%"
-                        }
-                    })
-                })
-
-            }
-
-            
-
-          
-            $("#confirmFileModal").modal({ backdrop: 'static', keyboard: false })
-
-            document.getElementById("send-media-btn").addEventListener("click", (event) => {
-
-                insert_message("me",message,"",message["type"])
-                $("#confirmFileModal").modal("hide")
-                ipc.send("send-media", message)
-            })
-        })
+        
 
 
     })
     // ! *****************************************************
+    ipc.on("file-chosen", (event, data) => {
+        var message = { "uuid": crypto.randomUUID(), "time": Date(), "type": "txt", "path": '', "from": user_obj[user_obj["active"]]["email"], "to": account_db[panel_name]["email"], "name": panel_name }
+        if (data["data_abt_file"].includes("video")) {
+            message["type"] = "video"
+            message["path"] = data["path"]
+            document.getElementById("show-file-details").innerHTML = `<label class="title-label">${data["path"][0].replace(/^.*[\\\/]/, '')}</label>
+                                                                    <video controls width="250" id="sending-video-ele">                
+                                                                        <source src="${data["path"]}" type="${data["data_abt_file"]["mime"]}">
+                                                                    </video>`
+        }
+
+        if (data["data_abt_file"].includes("image")) {
+            message["type"] = "image"
+            message["path"] = data["path"]
+            document.getElementById("show-file-details").innerHTML = `<img id="sending-image-ele" src="${data["path"]}" alt="">`
+        }
+
+        if (data["data_abt_file"].includes("audio")) {
+            console.log(data)
+            message["type"] = "audio"
+            message["path"] = data["path"]
+            let album_cover = null
+            document.getElementById("show-file-details").innerHTML = `<div class="custom-audio-div">
+                                                                        <div class="audio-image" style="background-image: url(${album_cover});">
+
+                                                                        </div>
+                                                                        <div class="audio-controls-div">
+                                                                            <div class="audio-progress">
+                                                                                <div class="progress" style="height: 3px;">
+                                                                                    <div class="progress-bar" style="width: 0%" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="flex-justify-content">
+                                                                                <button type="button" onClick="moveForward2sec()" class="btn"><i class="material-icons">replay</i></button>
+                                                                                <button id="send-audio-message-play-pause" type="button" onClick="play_pause_audio('abt_send_msg','')" class="btn"><i class="material-icons">play_arrow</i></button>
+                                                                                <button type="button" onClick="moveBack2sec()" class="btn" ><i class="material-icons">forward_5</i></button>
+                                                                            </div>
+                                                                        </div>
+                                                                        <audio id="main-audio">
+                                                                            <source src="${data["path"]}">
+                                                                        </audio>
+                                                                      </div>`
+            send_audio_message_play_pause = document.getElementById("send-audio-message-play-pause")
+
+
+            document.getElementById("main-audio").addEventListener("timeupdate", async (event) => {
+                let target = event.target
+                let friends_of_target = await target.parentNode.children
+                let progress_percent = (target.currentTime / target.duration) * 100
+
+                Array.from(friends_of_target).forEach((value) => {
+                    if (value.classList.contains("audio-controls-div")) {
+                        let audio_progress_div = value.children[0]
+                        let progress_bar = audio_progress_div.children[0].children[0]
+
+                        progress_bar.style.width = progress_percent + "%"
+                    }
+                })
+            })
+
+        }
+
+
+
+
+        $("#confirmFileModal").modal({ backdrop: 'static', keyboard: false })
+
+        
+    })
+
+    document.getElementById("send-media-btn").addEventListener("click", (event) => {
+
+        insert_message("me", message, "", message["type"])
+        $("#confirmFileModal").modal("hide")
+
+        // Sending file to Rest server to make it available for download once message details are sent
+        const fileData = new LocalFileData(data["path"])
+        const file = new File([fileData], fileData.name);
+
+        // Create a FormData object and append the file to it
+        const formData = new FormData();
+        formData.append('file', file);
+        console.log(formData)
+        console.log(file)
+
+        // Send a POST request to the server with the file data
+
+        // fetch('http://127.0.0.1:8000/uploadfile', {
+        //     method: 'POST',
+        //     body: formData
+        // })
+        // .then(response => {
+        //     // Handle the server response
+        //     console.log(response)
+        // })
+        // .catch(error => {
+        //     console.error(error);
+        // });
+        
+        // Sending message details to recipient but first goes through socket sever
+        // ipc.send("send-media", message)
+    })
 
     // ! Conatext Menu
     document.getElementById("msg-area-div").insertAdjacentElement("afterbegin", msg_area_context_menu)
@@ -1143,19 +1200,19 @@ const show_send_message_panel = (panel_name, messages) => {
                     audioRecorder.mediaRecorder.onstop = (event) => {
                         // console.log(event)
                         audioRecorder.message["chunks"] = audioRecorder.audioChunks
-                        ipc.send("audio-recording",audioRecorder.audioChunks,audioRecorder.message["uuid"])
+                        ipc.send("audio-recording", audioRecorder.audioChunks, audioRecorder.message["uuid"])
                         if (clique_list.includes(panel_name)) {
                             message.to = panel_name
                             ipc.send("send_clique_message", message)
-                            insert_message("me", message, "",message["type"])
+                            insert_message("me", message, "", message["type"])
 
                         } else {
                             message.to = account_db[panel_name]["email"]
-                
+
                             ipc.send("send_text_message", JSON.stringify(message))
-                            
-                            insert_message("me", message, "",message["type"])
-                        }                    
+
+                            insert_message("me", message, "", message["type"])
+                        }
                     }
 
                     audioRecorder.mediaRecorder.ondataavailable = (event) => {
@@ -1196,21 +1253,21 @@ const show_send_message_panel = (panel_name, messages) => {
         account_db[panel_name]["messages"].forEach((value, index, array) => {
             if (value["from"] === user_obj[user_obj["active"]]["email"]) {
 
-                insert_message("me", value, "",value["type"])
+                insert_message("me", value, "", value["type"])
             } else {
-                console.log(".",value)
-                insert_message("other", value, "",value["type"])
+                console.log(".", value)
+                insert_message("other", value, "", value["type"])
             }
         })
     }
     // ! ***************************************
 
     // ! Removing the number of unread messages badge from a chat when user clicks on the chat
-    if (account_db[panel_name]["email"] in unread_msg){
+    if (account_db[panel_name]["email"] in unread_msg) {
         remove_number_of_unread_messaes(panel_name)
         unread_msg[account_db[panel_name]["email"]] = []
-        console.log(unread_msg,"checking if unread messages is cleared")
-    } 
+        console.log(unread_msg, "checking if unread messages is cleared")
+    }
 
     // // ! Displaying unread messages 
     // if (account_db[panel_name]["email"] in unread_msg) {
@@ -1225,8 +1282,8 @@ const show_send_message_panel = (panel_name, messages) => {
     }
 }
 
-const insert_message = (sender, msg, time,message_type) => {
-    if (message_type === "txt"){
+const insert_message = (sender, msg, time, message_type) => {
+    if (message_type === "txt") {
 
         if (sender != "me") {
             var msg_html = `<div class="message" id="${msg["uuid"]}">
@@ -1240,7 +1297,7 @@ const insert_message = (sender, msg, time,message_type) => {
                                 </div>
                             </div>`
         } else if (sender === "me") {
-    
+
             var msg_html = `<div class="message me" id="${msg["uuid"]}">
                                 <div class="text-main">
                                     <div class="text-group me">
@@ -1254,8 +1311,8 @@ const insert_message = (sender, msg, time,message_type) => {
         }
     }
 
-    if (message_type === "audio"){
-        if (sender != "me"){
+    if (message_type === "audio") {
+        if (sender != "me") {
             var msg_html = `<div class="message" id="${msg["uuid"]}">
                                 <div class="text-main">
                                     <div class="text-group">
@@ -1285,8 +1342,8 @@ const insert_message = (sender, msg, time,message_type) => {
                                     <span>09:46 AM</span>
                                 </div>
                             </div>`
-            
-        } else if (sender === "me"){
+
+        } else if (sender === "me") {
             var msg_html = `<div class="message me" id="${msg["uuid"]}">
                                 <div class="text-main">
                                     <div class="text-group me">
@@ -1320,8 +1377,8 @@ const insert_message = (sender, msg, time,message_type) => {
 
     }
 
-    if (message_type === "image"){
-        if (sender != "me"){
+    if (message_type === "image") {
+        if (sender != "me") {
             var msg_html = `<div class="message" id="${msg["uuid"]}">
                                 <div class="text-main">
                                     <div class="text-group">
@@ -1335,7 +1392,7 @@ const insert_message = (sender, msg, time,message_type) => {
                                     <span>11:07 PM</span>
                                 </div>
                             </div>`
-        } else if (sender === "me"){
+        } else if (sender === "me") {
             var msg_html = `<div class="message me" id="${msg["uuid"]}">
                                 <div class="text-main">
                                     <div class="text-group me">
@@ -1352,8 +1409,8 @@ const insert_message = (sender, msg, time,message_type) => {
         }
     }
 
-    if (message_type === "video"){
-        if(sender != "me"){
+    if (message_type === "video") {
+        if (sender != "me") {
             var msg_html = `<div class="message" id="${msg["uuid"]}">
                                 <div class="text-main">
                                     <div class="text-group">
@@ -1367,7 +1424,7 @@ const insert_message = (sender, msg, time,message_type) => {
                                     <span>11:07 PM</span>
                                 </div>
                             </div>`
-        } else if (sender === "me"){
+        } else if (sender === "me") {
             var msg_html = `<div class="message me" id="${msg["uuid"]}">
                                 <div class="text-main">
                                     <div class="text-group me">
@@ -1394,22 +1451,22 @@ const insert_message = (sender, msg, time,message_type) => {
 
     })
 
-    if (message_type === "audio"){
-        document.getElementById(`${msg["uuid"]}-send-audio-message-play-pause`).addEventListener("click",(event)=>{
-            play_pause_audio(`${msg["uuid"]}-send-audio-message-play-pause`,`${msg["uuid"]}-audio`)
+    if (message_type === "audio") {
+        document.getElementById(`${msg["uuid"]}-send-audio-message-play-pause`).addEventListener("click", (event) => {
+            play_pause_audio(`${msg["uuid"]}-send-audio-message-play-pause`, `${msg["uuid"]}-audio`)
         })
 
-        document.getElementById(`${msg["uuid"]}-audio`).addEventListener("timeupdate",async (event)=>{
+        document.getElementById(`${msg["uuid"]}-audio`).addEventListener("timeupdate", async (event) => {
             let target = event.target
             let friends_of_target = await target.parentNode.children
-            let progress_percent = (target.currentTime/target.duration)*100
+            let progress_percent = (target.currentTime / target.duration) * 100
 
-            Array.from(friends_of_target).forEach((value)=>{
-                if (value.classList.contains("audio-controls-div")){
+            Array.from(friends_of_target).forEach((value) => {
+                if (value.classList.contains("audio-controls-div")) {
                     let audio_progress_div = value.children[0]
                     let progress_bar = audio_progress_div.children[0].children[0]
 
-                    progress_bar.style.width = progress_percent+"%"
+                    progress_bar.style.width = progress_percent + "%"
                 }
             })
         })
@@ -1423,8 +1480,8 @@ const show_number_of_unread_messages = (card_name, number) => {
     card.innerHTML = `<span class="badge badge-pill badge-info">${number}</span>`
 }
 
-const remove_number_of_unread_messaes = (card_name) =>{
-    var card = document.getElementById(card_name+"-unread-messages")
+const remove_number_of_unread_messaes = (card_name) => {
+    var card = document.getElementById(card_name + "-unread-messages")
     card.style.visibility = "hidden";
 }
 
@@ -1512,7 +1569,7 @@ const create_clique = () => {
     ipc.on("creation-done", (event, data) => {
         $("#creatCliqueModal").modal("hide")
         $('#create-clique').html('Continue').addClass('enabled');
-        insert_chat_card(clique_obj["name"],"")
+        insert_chat_card(clique_obj["name"], "")
     })
 }
 
@@ -1576,11 +1633,11 @@ const change_audio_message_btn_id = async (e) => {
 
 
 
-const play_pause_audio = (element,element_id)=>{
+const play_pause_audio = (element, element_id) => {
     // element id is only used when the audio widget is one of those in show messages
-    if (audio_playing === false){
-        
-        if (element === "abt_send_msg"){        
+    if (audio_playing === false) {
+
+        if (element === "abt_send_msg") {
             send_audio_message_play_pause.innerHTML = `<i class="material-icons">pause</i>`
             document.getElementById("main-audio").play()
             audio_playing = true
@@ -1589,8 +1646,8 @@ const play_pause_audio = (element,element_id)=>{
             document.getElementById(element).innerHTML = `<i class="material-icons">pause</i>`
             document.getElementById(element_id).play()
         }
-    }else{
-        if (element === "abt_send_msg"){        
+    } else {
+        if (element === "abt_send_msg") {
             send_audio_message_play_pause.innerHTML = `<i class="material-icons">play_arrow</i>`
             document.getElementById("main-audio").pause()
             audio_playing = false

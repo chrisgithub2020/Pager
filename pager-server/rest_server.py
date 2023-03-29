@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
 from typing import Dict
 from utils import Utils
 from database import DataBase
@@ -43,3 +43,7 @@ def verify_user_registration_code(info: Dict[str, str]):
         verification_result = 1
 
     return verification_result
+
+@app.post("/uploadfile")
+async def create_upload_file(file: UploadFile = File(...)):
+    return {"filename": file.filename}

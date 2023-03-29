@@ -7,7 +7,6 @@ const { Blob } = require("buffer")
 const detect = require("detect-file-type")
 const mime = require("mime-types")
 const mutag = require('mutag');
-const fetch = ("node-fetch").default
 
 
 
@@ -220,9 +219,9 @@ app.on("will-finish-launching", () => {
 
 // ! Allowing user to choos image to send to chat
 ipc.on("open-file", async (event) => {
-  const file = await dialog.showOpenDialog(mainWindow, { properties: ["openFile"], filters: { extensions: ["*"], name: "All files" } })
+  let file = await dialog.showOpenDialog(mainWindow, { properties: ["openFile"], filters: { extensions: ["*"], name: "All files" } })
   let result = mime.lookup(file["filePaths"][0])
-  const file_info = { "path": file["filePaths"], "data_abt_file": result }
+  let file_info = { "path": file["filePaths"][0], "data_abt_file": result }
 
   // if (file_info.data_abt_file.includes("audio")){
   //   fs.readFile(file.filePaths[0], (err, data) => {
@@ -232,15 +231,21 @@ ipc.on("open-file", async (event) => {
   //     });
   //   });
   // }
-  console.log(file_info)
-  event.sender.send("file-chosen", file_info)
+  // file_info = JSON.stringify(file_info)
+  
+
+  //Checking if a file was truely chosen before sending it
+  if (file["canceled"] === false){
+    event.sender.send("file-chosen", file_info)
+    console.log(typeof file_info)
+
+  }
 })
 
 // ! Allowing the user to choose a profile picture
 ipc.on("choose_profile_pic", async (event) => {
 
   const files = await dialog.showOpenDialog(mainWindow, { properties: ["openFile"], filters: { extensions: ["png", "jpg"], name: "Image" } })
-  console.log(files["filePaths"])
 
   if (files['filePaths'].length > 0) {
     event.sender.send("change_picture", files["filePaths"][0])
@@ -425,7 +430,7 @@ ipc.on("send_text_message", (event, message) => {
   socket_functions.send_text_message(message)
 
   /// Saving the message
-  if ("messages" in active_user_db_object[message["name"]]) {
+  if (Object.keys(active_user_db_object[message["name"]]).includes("messages")) {
     active_user_db_object[message["name"]]["messages"].push(message)
   } else {
     active_user_db_object[message["name"]]["messages"] = [message]
@@ -483,7 +488,6 @@ ipc.on("enter_clique_rooms", (event, list_of_cliques) => {
 ipc.on("send-media", (event, data) => {
 
   socket_functions.send_media(data)
-  send_media_stream(data["path"], data["uuid"])
 
   /// Saving the message
   if ("messages" in active_user_db_object[data["name"]]) {
