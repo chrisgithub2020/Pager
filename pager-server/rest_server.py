@@ -1,4 +1,5 @@
 from fastapi import FastAPI, File, UploadFile
+import shutil
 from typing import Dict
 from utils import Utils
 from database import DataBase
@@ -46,4 +47,10 @@ def verify_user_registration_code(info: Dict[str, str]):
 
 @app.post("/uploadfile")
 async def create_upload_file(file: UploadFile = File(...)):
-    return {"filename": file.filename}
+    file.file.seek(0, 2)  # Move the file pointer to the end of the file
+    file_size = file.file.tell()  # Get the current position of the file pointer
+    file.file.seek(0)
+    print(file_size)
+    with open(file=file.filename, mode="wb") as buffer:
+        shutil.copyfileobj(file.file,buffer)
+    return True

@@ -223,15 +223,15 @@ ipc.on("open-file", async (event) => {
   let result = mime.lookup(file["filePaths"][0])
   let file_info = { "path": file["filePaths"][0], "data_abt_file": result }
 
-  // if (file_info.data_abt_file.includes("audio")){
-  //   fs.readFile(file.filePaths[0], (err, data) => {
-  //     mutag.fetch(data).then((tags) => {
-  //       //get all tags
-  //       file_info["cover"] = tags["APIC"]
-  //     });
-  //   });
-  // }
-  // file_info = JSON.stringify(file_info)
+  if (file_info.data_abt_file.includes("audio")){
+    fs.readFile(file.filePaths[0], (err, data) => {
+      mutag.fetch(data).then((tags) => {
+        //get all tags
+        file_info["cover"] = tags["APIC"]
+        
+      });
+    });
+  }
   
 
   //Checking if a file was truely chosen before sending it

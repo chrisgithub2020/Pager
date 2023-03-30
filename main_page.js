@@ -7,7 +7,7 @@ const axios = require("axios")
 const path = require("path")
 const http = require("http")
 const media_tags = require("jsmediatags")
-const {LocalFileData} = require("get-file-object-from-local-path");
+const {LocalFileData, getFileObjectFromLocalPath } = require("get-file-object-from-local-path");
 const { type } = require("os");
 const { time } = require("console");
 const allow_member_to_send_msg_checkBox = document.getElementById('allow-members-send-message');
@@ -1051,7 +1051,7 @@ const show_send_message_panel = (panel_name, messages) => {
         layout.style.filter = "blur(0px)";
         gallery_div.style.display = "none";
     })
-
+    /////// This part deal with sending of media files
     // * Opening other
     const other_attachment_btn = document.getElementById("other-attachment")
     other_attachment_btn.addEventListener("click", (event) => {
@@ -1064,11 +1064,14 @@ const show_send_message_panel = (panel_name, messages) => {
 
     })
     // ! *****************************************************
+    let mediaMessage = new MediaMessage()
     ipc.on("file-chosen", (event, data) => {
-        var message = { "uuid": crypto.randomUUID(), "time": Date(), "type": "txt", "path": '', "from": user_obj[user_obj["active"]]["email"], "to": account_db[panel_name]["email"], "name": panel_name }
+        console.log(data,"this is the data")
+        mediaMessage.uuid = crypto.randomUUID()
+        mediaMessage.time = Date()
         if (data["data_abt_file"].includes("video")) {
-            message["type"] = "video"
-            message["path"] = data["path"]
+            mediaMessage.type = "video"
+            mediaMessage.path = data["path"]
             document.getElementById("show-file-details").innerHTML = `<label class="title-label">${data["path"][0].replace(/^.*[\\\/]/, '')}</label>
                                                                     <video controls width="250" id="sending-video-ele">                
                                                                         <source src="${data["path"]}" type="${data["data_abt_file"]["mime"]}">
@@ -1076,16 +1079,17 @@ const show_send_message_panel = (panel_name, messages) => {
         }
 
         if (data["data_abt_file"].includes("image")) {
-            message["type"] = "image"
-            message["path"] = data["path"]
+            mediaMessage.type = "image"
+            mediaMessage.path = data["path"]
             document.getElementById("show-file-details").innerHTML = `<img id="sending-image-ele" src="${data["path"]}" alt="">`
         }
 
         if (data["data_abt_file"].includes("audio")) {
             console.log(data)
-            message["type"] = "audio"
-            message["path"] = data["path"]
-            let album_cover = null
+            mediaMessage.type = "audio"
+            mediaMessage.path = data["path"]
+            let blob = new Blob([data["cover"]],{type:"image/jpeg"})
+            let album_cover = URL.createObjectURL(blob)
             document.getElementById("show-file-details").innerHTML = `<div class="custom-audio-div">
                                                                         <div class="audio-image" style="background-image: url(${album_cover});">
 
@@ -1136,36 +1140,42 @@ const show_send_message_panel = (panel_name, messages) => {
 
     document.getElementById("send-media-btn").addEventListener("click", (event) => {
 
-        insert_message("me", message, "", message["type"])
+        insert_message("me", mediaMessage, "", mediaMessage.type)
         $("#confirmFileModal").modal("hide")
 
         // Sending file to Rest server to make it available for download once message details are sent
-        const fileData = new LocalFileData(data["path"])
-        const file = new File([fileData], fileData.name);
+        // Did this because LoadFileData was not reading the file completely
+        let buffer_of_file = fs.readFileSync(mediaMessage.path)        
+        const fileData = new LocalFileData(mediaMessage.path)
+        const file = new File([buffer_of_file], fileData.name);
 
         // Create a FormData object and append the file to it
         const formData = new FormData();
         formData.append('file', file);
-        console.log(formData)
-        console.log(file)
 
         // Send a POST request to the server with the file data
 
-        // fetch('http://127.0.0.1:8000/uploadfile', {
-        //     method: 'POST',
-        //     body: formData
-        // })
-        // .then(response => {
-        //     // Handle the server response
-        //     console.log(response)
-        // })
-        // .catch(error => {
-        //     console.error(error);
-        // });
+        fetch('http://127.0.0.1:8000/uploadfile', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            // Handle the server response
+            if (response === true){
+                console.log(response)
+                // Sending message details to recipient but first goes through socket sever
+                ipc.send("send-media", mediaMessage)
+                
+            }
+        })
+        .catch(error => {
+            console.error(error);
+        });
         
-        // Sending message details to recipient but first goes through socket sever
-        // ipc.send("send-media", message)
+        
     })
+    /////////////// Done with sending of media files
+
 
     // ! Conatext Menu
     document.getElementById("msg-area-div").insertAdjacentElement("afterbegin", msg_area_context_menu)
