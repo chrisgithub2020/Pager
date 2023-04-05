@@ -1,5 +1,7 @@
 from fastapi import FastAPI, File, UploadFile
+from fastapi.responses import FileResponse
 import shutil
+import uuid
 from typing import Dict
 from utils import Utils
 from database import DataBase
@@ -47,10 +49,15 @@ def verify_user_registration_code(info: Dict[str, str]):
 
 @app.post("/uploadfile")
 async def create_upload_file(file: UploadFile = File(...)):
-    file.file.seek(0, 2)  # Move the file pointer to the end of the file
-    file_size = file.file.tell()  # Get the current position of the file pointer
-    file.file.seek(0)
-    print(file_size)
-    with open(file=file.filename, mode="wb") as buffer:
+    file_extension = file.filename.split(".")[1]
+    new_filename = f"{str(uuid.uuid1())}.{file_extension}"
+    with open(file=new_filename, mode="wb") as buffer:
         shutil.copyfileobj(file.file,buffer)
-    return True
+    return {"success":True,"mediaURL":new_filename}
+
+@app.get("/file/{filename}")
+async def get_file(filename: str):
+    # Construct the file path
+    file_path = filename  # assuming files are stored in a directory named 'files'
+    # Return the file response
+    return FileResponse(file_path)

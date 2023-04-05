@@ -7,6 +7,8 @@ const axios = require("axios")
 const path = require("path")
 const http = require("http")
 const media_tags = require("jsmediatags")
+const os = require("os")
+const homeDir = os.homedir()
 const {LocalFileData, getFileObjectFromLocalPath } = require("get-file-object-from-local-path");
 const { type } = require("os");
 const { time } = require("console");
@@ -42,7 +44,7 @@ function TextMessage (type = "txt",uuid = crypto.randomUUID(),time = Date(),mess
     this.name = name
 }
 // var message = { "uuid": crypto.randomUUID(), "time": Date(), "type": "txt", "path": '', "from": user_obj[user_obj["active"]]["email"], "to": account_db[panel_name]["email"], "name": panel_name }
-function MediaMessage (type,uuid = crypto.randomUUID(),time = Date(),from= user_obj[user_obj["active"]]["email"],to,name,path){
+function MediaMessage (type,uuid = crypto.randomUUID(),time = Date(),from= user_obj[user_obj["active"]]["email"],to,name,path,mediaURL){
     this.uuid = uuid
     this.time = time
     this.type = type
@@ -50,6 +52,7 @@ function MediaMessage (type,uuid = crypto.randomUUID(),time = Date(),from= user_
     this.from = from
     this.to = to
     this.name = name
+    this.mediaURL = mediaURL
 }
 document.addEventListener("DOMContentLoaded", () => {
     pc = new RTCPeerConnection(stun_server)
@@ -596,7 +599,6 @@ document.getElementById("add-account").addEventListener("click", () => {
 
 // ! Whenever a messag is received
 ipc.on("message", (event, msg) => {
-    console.log("This is it ", msg)
 
     if (no_contact) {
         if (msg["from"] in unread_msg) {
@@ -731,7 +733,40 @@ ipc.on("message", (event, msg) => {
             }
 
         }
+        
     }
+
+    fetch(`http://127.0.0.1:8000/file/${msg["mediaURL"]}`, {
+        method: 'GET'
+    })
+    .then(async (response) => {
+        // Handle the server response
+        if (response){
+            let media_blob = await response.blob()
+            // Create a FileReader object
+            const reader = new FileReader();
+
+            // Set up a callback for when the FileReader has loaded the contents of the Blob
+            reader.onload = (event) => {
+                // Access the ArrayBuffer containing the contents of the Blob
+                const arrayBuffer = event.target.result;
+                
+                // Create a Buffer object from the ArrayBuffer
+                const buffer = Buffer.from(arrayBuffer);
+                
+                // Now you can use the 'buffer' object as needed, e.g. save to disk using fs.writeFile() in Node.js
+                // ...
+                fs.writeFileSync(msg["path"], buffer);
+
+            };
+
+            // Read the contents of the Blob as an ArrayBuffer
+            reader.readAsArrayBuffer(media_blob);
+        }
+    })
+    .catch(error => {
+        console.error(error);
+    });
 });
 
 
@@ -1091,7 +1126,7 @@ const show_send_message_panel = (panel_name, messages) => {
             let blob = new Blob([data["cover"]],{type:"image/jpeg"})
             let album_cover = URL.createObjectURL(blob)
             document.getElementById("show-file-details").innerHTML = `<div class="custom-audio-div">
-                                                                        <div class="audio-image" style="background-image: url(${album_cover});">
+                                                                        <div class="audio-image" style="background-image: url(${album_cover}); background-size:100% 100%">
 
                                                                         </div>
                                                                         <div class="audio-controls-div">
@@ -1139,6 +1174,8 @@ const show_send_message_panel = (panel_name, messages) => {
     })
 
     document.getElementById("send-media-btn").addEventListener("click", (event) => {
+        ipc.send("save-album-cover",mediaMessage.uuid)
+
 
         insert_message("me", mediaMessage, "", mediaMessage.type)
         $("#confirmFileModal").modal("hide")
@@ -1161,8 +1198,9 @@ const show_send_message_panel = (panel_name, messages) => {
         })
         .then(response => {
             // Handle the server response
-            if (response === true){
+            if (response["success"] === true){
                 console.log(response)
+                mediaMessage.mediaURL = response["mediaURL"]
                 // Sending message details to recipient but first goes through socket sever
                 ipc.send("send-media", mediaMessage)
                 
@@ -1328,7 +1366,7 @@ const insert_message = (sender, msg, time, message_type) => {
                                     <div class="text-group">
                                         <div class="text">
                                             <div class="custom-audio-div">
-                                                <div class="audio-image">
+                                                <div class="audio-image" style="background-image: url("C:\\Users\\AGYEMAN-PC\\.pager\\resources\\albumCovers\\8fbccca0-6544-4a06-9f9d-c73b799c838b.jpg"); background-size:100% 100%">
                                                     
                                                 </div>
                                                 <div class="audio-controls-div">
@@ -1359,7 +1397,7 @@ const insert_message = (sender, msg, time, message_type) => {
                                     <div class="text-group me">
                                         <div class="text me">
                                             <div class="custom-audio-div" style="width:300px;">
-                                                <div class="audio-image">
+                                                <div class="audio-image" style="background-image: url(${homeDir + "\\.pager\\resources\\albumCovers\\"+msg["uuid"]+".jpg"}); background-size:100% 100%">
                                                     
                                                 </div>
                                                 <div class="audio-controls-div">

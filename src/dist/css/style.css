@@ -669,9 +669,10 @@ img#chat-profile-photo {
 .audio-image{
   background-color: #17212B;
   height: 100%;
-  width: 23%;
+  width: 35%;
   border: 3px solid #243342;
 }
+
 .audio-controls-div{
   background-color: #17212B;
   width: 77%;

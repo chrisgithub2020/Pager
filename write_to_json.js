@@ -33,6 +33,13 @@ fs.exists(homeDir + "\\.pager\\resources", (resources_exist) => {
     }
 })
 
+fs.exists(homeDir + "\\.pager\\resources\\albumCovers",(cover_exist)=>{
+    if (!cover_exist){
+        fs.mkdir(homeDir + "\\.pager\\resources\\albumCovers",{recursive:true},(err)=>{
+            if (err) throw err;
+        })
+    }
+})
 
 module.exports.save_new_user = async (info) => {
     await fs.writeFile(homeDir + "\\.pager\\resources\\user.page", info, (err) => {

@@ -7,8 +7,8 @@ const { Blob } = require("buffer")
 const detect = require("detect-file-type")
 const mime = require("mime-types")
 const mutag = require('mutag');
-
-
+const os = require("os")
+const homeDir = os.homedir()
 
 
 
@@ -222,24 +222,31 @@ ipc.on("open-file", async (event) => {
   let file = await dialog.showOpenDialog(mainWindow, { properties: ["openFile"], filters: { extensions: ["*"], name: "All files" } })
   let result = mime.lookup(file["filePaths"][0])
   let file_info = { "path": file["filePaths"][0], "data_abt_file": result }
-
-  if (file_info.data_abt_file.includes("audio")){
-    fs.readFile(file.filePaths[0], (err, data) => {
-      mutag.fetch(data).then((tags) => {
+  if (file["canceled"] === false){
+    if (file_info.data_abt_file.includes("audio")){
+      await fs.readFile(file.filePaths[0], async (err, data) => {
+        let tags = await mutag.fetch(data)
         //get all tags
         file_info["cover"] = tags["APIC"]
-        
+        event.sender.send("file-chosen", file_info)
+        console.log(typeof file_info)
+
+        ipc.on("save-album-cover", (event,name)=>{
+          fs.writeFile(homeDir + "\\.pager\\resources\\albumCovers\\"+name+".jpg", file_info["cover"], (err) => {
+            if (err) throw err;
+            console.log(`Saved ${name}.jpg`);
+          });
+        })
+
       });
-    });
+    } else {
+      event.sender.send("file-chosen", file_info)
+      console.log(typeof file_info)
+
+    }
   }
   
 
-  //Checking if a file was truely chosen before sending it
-  if (file["canceled"] === false){
-    event.sender.send("file-chosen", file_info)
-    console.log(typeof file_info)
-
-  }
 })
 
 // ! Allowing the user to choose a profile picture
@@ -454,6 +461,7 @@ ipc.on("log_in_to_account", async (event, db) => {
 })
 
 ipc.on("get_info", (event, filter) => {
+  console.log("Getting info ",filter)
   socket_functions.getInfo(JSON.parse(filter))
   socket_functions.socket.on("verify_acc", (info) => {
     info["profile_picture"] = info["profile_pic"]
@@ -530,19 +538,3 @@ ipc.on("send-offer", (event, offer) => {
 ipc.on("answer", (event, answer) => {
   socket_functions.send_answer(answer)
 })
-
-const send_media_stream = (path, id) => {
-  console.log(path, "This is the path to media file")
-  const stream = fs.createReadStream(path[0])
-  stream.on("data", (data) => {
-    socket_functions.send_media_stream({ "data": data, "uuid": id })
-  })
-
-  stream.on("end", () => {
-    socket_functions.send_media_stream({ "data": "done", "uuid": id })
-  })
-
-  stream.on("error", (err) => {
-    console.log(err)
-  })
-}

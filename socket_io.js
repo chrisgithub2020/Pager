@@ -47,11 +47,7 @@ module.exports.send_clique_info_to_create = async (clique_obj) => {
 }
 
 module.exports.send_media = async (data) => {
-    socket.emit("send_media", data)
-}
-
-module.exports.send_media_stream = async (data) => {
-    socket.emit("send_media_stream", data)
+    socket.emit("media_message", data)
 }
 
 module.exports.send_ice_cand = async (data) => {

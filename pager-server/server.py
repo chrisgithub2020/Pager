@@ -6,7 +6,6 @@ from utils import Utils
 from database import DataBase
 from datetime import datetime
 from threading import Thread
-media_messages_to_be_sent = {}
 users_online = {}
 
 DB = DataBase()
@@ -133,21 +132,11 @@ def send_saved_messages(sid, code):
 
 
 @sio.event
-def send_media(sid, msg_data: dict):
-    file_extension = os.path.splitext(msg_data['path'][0])[1]
-    print(file_extension, "The file extension")
-    # msg_data["media_link"] = ''
-    msg_data["path"] = f"{msg_data['uuid']}.{file_extension}"
-    print(msg_data["path"])
+def media_message(sid, msg_data: dict):
     msg_data["sender"] = msg_data["from"]
-    msg_data.pop("from")
     msg_data["recipient"] = msg_data["to"]
-    msg_data.pop("to")
+    msg_data["path"] = msg_data["mediaURL"]
 
-    media_messages_to_be_sent[msg_data["uuid"]] = msg_data
-
-    with open(file=f"{msg_data['uuid']}.{os.path.splitext(msg_data['path'])[1]}", mode="w") as file:
-        pass
 
     msg_data["id"] = msg_data["uuid"]
     msg_data.pop("uuid")
@@ -185,6 +174,8 @@ def send_media(sid, msg_data: dict):
             # Saving messages
             with open(file=f"./saved-messages/{recipient['email']}.json", mode="w") as file:
                 json.dump(json_content, file)
+        else:
+            sio.emit(to=recipient["sid"],event="recieve_message",data=msg_data)
 
 
 @sio.event
@@ -236,15 +227,14 @@ def create_clique(sid, info):
 @sio.event
 def send_clique_message(sid, message):
     clique = DB.find(filter={"link": message["to"]}, table=DB.clique_table)
+    sio.emit(data=message, event="recieve_clique_message",room=message["to"],skip_sid=sid)
+
     for user in clique["members"]:
         recipient = DB.find(filter={"email": user}, table=DB.users_table)
         if recipient != None:
             if recipient["online_status"] == 0:
                 with open(file=f"./saved-messages/{recipient['email']}.json", mode="w") as file:
                     json.dump(message, file)
-            else:
-                sio.emit(data=message, event="recieve_clique_message",
-                         to=recipient["sid"])
 
 
 @sio.event
@@ -295,23 +285,6 @@ def send_answer(sid, answer_obj):
             sio.emit("rtc-offer", answer_obj, caller["sid"])
 
 
-@sio.event
-def send_media_stream(sid, media_stream):
-    if media_stream["data"] == "done":
-        pass
-    else:
-        print(media_stream["data"])
-        with open(media_messages_to_be_sent[media_stream["uuid"]]["path"], 'a+') as file:
-            file.write(media_stream)
-
-    recipient = DB.find(filter={
-                        "email": media_messages_to_be_sent[media_stream["uuid"]]["to"]}, table=DB.users_table)
-    if recipient != None:
-        if recipient["online_status"] == 0:
-            pass
-        else:
-            sio.emit(data=media_messages_to_be_sent[media_stream["uuid"]],
-                     event="recieve_media_msg", to=recipient["sid"])
 
 
 def thread_for_joining_cliques(sid, cliques):
