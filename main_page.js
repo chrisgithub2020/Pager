@@ -9,7 +9,7 @@ const http = require("http")
 const media_tags = require("jsmediatags")
 const os = require("os")
 const homeDir = os.homedir()
-const {LocalFileData, getFileObjectFromLocalPath } = require("get-file-object-from-local-path");
+const { LocalFileData, getFileObjectFromLocalPath } = require("get-file-object-from-local-path");
 const { type } = require("os");
 const { time } = require("console");
 const allow_member_to_send_msg_checkBox = document.getElementById('allow-members-send-message');
@@ -34,7 +34,7 @@ const stun_server = {
 }
 var pc = null;
 // var message = { "uuid": crypto.randomUUID(), "time": Date(), "type": "txt", "message": document.getElementById("message-area").value, "from": user_obj[user_obj["active"]]["email"], "to": "", "name": panel_name }
-function TextMessage (type = "txt",uuid = crypto.randomUUID(),time = Date(),message,from= user_obj[user_obj["active"]]["email"],to,name){
+function TextMessage(type = "txt", uuid = crypto.randomUUID(), time = Date(), message, from = user_obj[user_obj["active"]]["email"], to, name) {
     this.uuid = uuid
     this.time = time
     this.type = type
@@ -44,7 +44,7 @@ function TextMessage (type = "txt",uuid = crypto.randomUUID(),time = Date(),mess
     this.name = name
 }
 // var message = { "uuid": crypto.randomUUID(), "time": Date(), "type": "txt", "path": '', "from": user_obj[user_obj["active"]]["email"], "to": account_db[panel_name]["email"], "name": panel_name }
-function MediaMessage (type,uuid = crypto.randomUUID(),time = Date(),from= user_obj[user_obj["active"]]["email"],to,name,path,mediaURL){
+function MediaMessage(type, uuid = crypto.randomUUID(), time = Date(), from = user_obj[user_obj["active"]]["email"], to, name, path, mediaURL) {
     this.uuid = uuid
     this.time = time
     this.type = type
@@ -511,6 +511,7 @@ ipc.on("display_utility_on_startup", async (event, data) => {
             console.log(contacts[value])
             if (contacts[value]["type"] === "clique") {
                 console.log("This is a clique", account_db[value])
+                clique_list.push(contacts[value]["name"])
 
                 if ("messages" in account_db[value]) {
                     insert_chat_card(value, account_db[value]["messages"][account_db[value]["messages"].length - 1])
@@ -637,7 +638,7 @@ ipc.on("message", (event, msg) => {
 
 
     } else {
-        if (!account_db[contact_email_and_saved_name[msg["from"]]]) {
+        if (!account_db[contact_email_and_saved_name[msg["from"]]] && !account_db[contact_email_and_saved_name[msg["to"]]]) {
             // Meaning contact does not exist
             console.log("contact does not exist")
 
@@ -733,40 +734,44 @@ ipc.on("message", (event, msg) => {
             }
 
         }
-        
+
     }
 
-    fetch(`http://127.0.0.1:8000/file/${msg["mediaURL"]}`, {
-        method: 'GET'
-    })
-    .then(async (response) => {
-        // Handle the server response
-        if (response){
-            let media_blob = await response.blob()
-            // Create a FileReader object
-            const reader = new FileReader();
+    if (msg["type"] != "txt") {
+        fetch(`http://127.0.0.1:8000/file/${msg["mediaURL"]}`, {
+            method: 'GET'
+        })
+            .then(async (response) => {
+                // Handle the server response
+                if (response) {
+                    let media_blob = await response.blob()
+                    // Create a FileReader object
+                    const reader = new FileReader();
 
-            // Set up a callback for when the FileReader has loaded the contents of the Blob
-            reader.onload = (event) => {
-                // Access the ArrayBuffer containing the contents of the Blob
-                const arrayBuffer = event.target.result;
-                
-                // Create a Buffer object from the ArrayBuffer
-                const buffer = Buffer.from(arrayBuffer);
-                
-                // Now you can use the 'buffer' object as needed, e.g. save to disk using fs.writeFile() in Node.js
-                // ...
-                fs.writeFileSync(msg["path"], buffer);
+                    // Set up a callback for when the FileReader has loaded the contents of the Blob
+                    reader.onload = (event) => {
+                        // Access the ArrayBuffer containing the contents of the Blob
+                        const arrayBuffer = event.target.result;
 
-            };
+                        // Create a Buffer object from the ArrayBuffer
+                        const buffer = Buffer.from(arrayBuffer);
 
-            // Read the contents of the Blob as an ArrayBuffer
-            reader.readAsArrayBuffer(media_blob);
-        }
-    })
-    .catch(error => {
-        console.error(error);
-    });
+                        // Now you can use the 'buffer' object as needed, e.g. save to disk using fs.writeFile() in Node.js
+                        // ...
+                        fs.writeFileSync(msg["path"], buffer);
+
+                    };
+
+                    // Read the contents of the Blob as an ArrayBuffer
+                    reader.readAsArrayBuffer(media_blob);
+                }
+            })
+            .catch(error => {
+                console.error(error);
+            });
+    }
+
+
 });
 
 
@@ -1092,16 +1097,16 @@ const show_send_message_panel = (panel_name, messages) => {
     other_attachment_btn.addEventListener("click", (event) => {
 
         close_menu()
-        
+
         ipc.send("open-file", 1)
-        
+
 
 
     })
     // ! *****************************************************
     let mediaMessage = new MediaMessage()
     ipc.on("file-chosen", (event, data) => {
-        console.log(data,"this is the data")
+        console.log(data, "this is the data")
         mediaMessage.uuid = crypto.randomUUID()
         mediaMessage.time = Date()
         if (data["data_abt_file"].includes("video")) {
@@ -1123,7 +1128,7 @@ const show_send_message_panel = (panel_name, messages) => {
             console.log(data)
             mediaMessage.type = "audio"
             mediaMessage.path = data["path"]
-            let blob = new Blob([data["cover"]],{type:"image/jpeg"})
+            let blob = new Blob([data["cover"]], { type: "image/jpeg" })
             let album_cover = URL.createObjectURL(blob)
             document.getElementById("show-file-details").innerHTML = `<div class="custom-audio-div">
                                                                         <div class="audio-image" style="background-image: url(${album_cover}); background-size:100% 100%">
@@ -1170,11 +1175,11 @@ const show_send_message_panel = (panel_name, messages) => {
 
         $("#confirmFileModal").modal({ backdrop: 'static', keyboard: false })
 
-        
+
     })
 
     document.getElementById("send-media-btn").addEventListener("click", (event) => {
-        ipc.send("save-album-cover",mediaMessage.uuid)
+        ipc.send("save-album-cover", mediaMessage.uuid)
 
 
         insert_message("me", mediaMessage, "", mediaMessage.type)
@@ -1182,7 +1187,7 @@ const show_send_message_panel = (panel_name, messages) => {
 
         // Sending file to Rest server to make it available for download once message details are sent
         // Did this because LoadFileData was not reading the file completely
-        let buffer_of_file = fs.readFileSync(mediaMessage.path)        
+        let buffer_of_file = fs.readFileSync(mediaMessage.path)
         const fileData = new LocalFileData(mediaMessage.path)
         const file = new File([buffer_of_file], fileData.name);
 
@@ -1196,21 +1201,21 @@ const show_send_message_panel = (panel_name, messages) => {
             method: 'POST',
             body: formData
         })
-        .then(response => {
-            // Handle the server response
-            if (response["success"] === true){
-                console.log(response)
-                mediaMessage.mediaURL = response["mediaURL"]
-                // Sending message details to recipient but first goes through socket sever
-                ipc.send("send-media", mediaMessage)
-                
-            }
-        })
-        .catch(error => {
-            console.error(error);
-        });
-        
-        
+            .then(response => {
+                // Handle the server response
+                if (response["success"] === true) {
+                    console.log(response)
+                    mediaMessage.mediaURL = response["mediaURL"]
+                    // Sending message details to recipient but first goes through socket sever
+                    ipc.send("send-media", mediaMessage)
+
+                }
+            })
+            .catch(error => {
+                console.error(error);
+            });
+
+
     })
     /////////////// Done with sending of media files
 
@@ -1247,8 +1252,31 @@ const show_send_message_panel = (panel_name, messages) => {
 
                     audioRecorder.mediaRecorder.onstop = (event) => {
                         // console.log(event)
-                        audioRecorder.message["chunks"] = audioRecorder.audioChunks
-                        ipc.send("audio-recording", audioRecorder.audioChunks, audioRecorder.message["uuid"])
+                        // audioRecorder.message["chunks"] = audioRecorder.audioChunks
+                        let audio_blob = new Blob(audioRecorder.audioChunks,{ type: 'audio/webm;codecs=opus' })
+
+                        console.log("audio blob size ===> ",audio_blob.size)
+
+
+                        console.log("audio blob" ,audio_blob)
+                        const reader = new FileReader();
+
+                        // Set up a callback for when the FileReader has loaded the contents of the Blob
+                        reader.onload = (event) => {
+                            // Access the ArrayBuffer containing the contents of the Blob
+                            const arrayBuffer = event.target.result;
+
+                            // Create a Buffer object from the ArrayBuffer
+                            const buffer = Buffer.from(arrayBuffer);
+
+                            // Now you can use the 'buffer' object as needed, e.g. save to disk using fs.writeFile() in Node.js
+                            // ...
+                            fs.writeFileSync(`${audioRecorder.message["uuid"]}.wav`, buffer);
+
+                        };
+
+                        // Read the contents of the Blob as an ArrayBuffer
+                        reader.readAsArrayBuffer(audio_blob);
                         if (clique_list.includes(panel_name)) {
                             message.to = panel_name
                             ipc.send("send_clique_message", message)
@@ -1263,9 +1291,8 @@ const show_send_message_panel = (panel_name, messages) => {
                         }
                     }
 
-                    audioRecorder.mediaRecorder.ondataavailable = (event) => {
-                        audioRecorder.audioChunks.push(event.data)
-                        console.log(event.data)
+                    audioRecorder.mediaRecorder.ondataavailable = async (event) => {
+                        await audioRecorder.audioChunks.push(event.data)
                     }
                 }).catch((err) => {
                     if (err) {
@@ -1285,8 +1312,10 @@ const show_send_message_panel = (panel_name, messages) => {
         })
     })
 
-    send_audio_btn.addEventListener("mouseup", (event) => {
-        audioRecorder.stop()
+    send_audio_btn.addEventListener("mouseup", async (event) => {
+        await audioRecorder.stop()
+
+        
         clearTimeout(timeout_id)
     })
 
@@ -1397,7 +1426,7 @@ const insert_message = (sender, msg, time, message_type) => {
                                     <div class="text-group me">
                                         <div class="text me">
                                             <div class="custom-audio-div" style="width:300px;">
-                                                <div class="audio-image" style="background-image: url(${homeDir + "\\.pager\\resources\\albumCovers\\"+msg["uuid"]+".jpg"}); background-size:100% 100%">
+                                                <div class="audio-image" style="background-image: url(${homeDir + "\\.pager\\resources\\albumCovers\\" + msg["uuid"] + ".jpg"}); background-size:100% 100%">
                                                     
                                                 </div>
                                                 <div class="audio-controls-div">

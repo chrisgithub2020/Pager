@@ -21,7 +21,7 @@ def register_user(user_info: Dict[str, str]):
     print(user_info)
     code = Utils.generate_code(7)
     print(f"\n The code is: {code} \n")
-    post = {"sid": "", "name": user_info["name"], "email": user_info["email"], "online_status": 1, "verification_code": code, "last_seen": datetime.today(), "joined_date": datetime.today(
+    post = {"sid": "", "name": user_info["name"], "email": user_info["email"],"cliques":[], "online_status": 1, "verification_code": code, "last_seen": datetime.today(), "joined_date": datetime.today(
     ), "profile_pic": user_info["profile_picture"], "messages_table": user_info["name"]+"msg_table", "verified": 0, "desktop": user_info["computer"], "phone": user_info["mobile_phone"]}
     DB.enter_post(table=DB.users_table, post=post)
     post = Utils.encode(post)

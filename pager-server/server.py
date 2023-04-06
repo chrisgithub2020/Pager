@@ -205,7 +205,7 @@ def create_clique(sid, info):
         "link": info["link"],
         "description": info["about"],
         "members": info["members"],
-        "admins": ["chris@gmail.com"],
+        "admins": ["john@gmail.com"],
         "settings": info["settings"],
         "profile_pic": info["profile_pic"],
         "roomname": info["link"]
@@ -216,7 +216,9 @@ def create_clique(sid, info):
     sio.emit(event="creation-done", data=post, to=sid)
 
     for m in post["members"]:
-        if bool(users_online[m]):
+        DB.update(filter={"email": m}, update={
+                        "$push": {"cliques": info["link"]}}, table=DB.users_table)
+        if m in users_online:
             sio.enter_room(sid=users_online[m], room=info["link"])
         else:
             print(m + " not online")
@@ -227,7 +229,7 @@ def create_clique(sid, info):
 @sio.event
 def send_clique_message(sid, message):
     clique = DB.find(filter={"link": message["to"]}, table=DB.clique_table)
-    sio.emit(data=message, event="recieve_clique_message",room=message["to"],skip_sid=sid)
+    sio.emit(data=message, event="recieve_message",room=message["to"],skip_sid=sid)
 
     for user in clique["members"]:
         recipient = DB.find(filter={"email": user}, table=DB.users_table)
