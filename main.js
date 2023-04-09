@@ -7,6 +7,7 @@ const { Blob } = require("buffer")
 const detect = require("detect-file-type")
 const mime = require("mime-types")
 const mutag = require('mutag');
+const crypto = require("crypto");
 const os = require("os")
 const homeDir = os.homedir()
 
@@ -136,10 +137,6 @@ const createWindow = () => {
           event.sender.send("incoming_call", call_id)
         })
 
-        ///
-        socket_functions.socket.on("ICECandidate", (data) => {
-          event.sender.send("ICEAnswer", data)
-        })
 
       }
     })
@@ -228,15 +225,16 @@ ipc.on("open-file", async (event) => {
         let tags = await mutag.fetch(data)
         //get all tags
         file_info["cover"] = tags["APIC"]
+        let name = await crypto.randomUUID()
+        file_info["albumCover"] = name+".jpg"
+        await fs.writeFile(homeDir + "\\.pager\\resources\\albumCovers\\"+name+".jpg", file_info["cover"], (err) => {
+          if (err) throw err;
+          console.log(`Saved ${name}.jpg`);
+        });
         event.sender.send("file-chosen", file_info)
         console.log(typeof file_info)
 
-        ipc.on("save-album-cover", (event,name)=>{
-          fs.writeFile(homeDir + "\\.pager\\resources\\albumCovers\\"+name+".jpg", file_info["cover"], (err) => {
-            if (err) throw err;
-            console.log(`Saved ${name}.jpg`);
-          });
-        })
+        
 
       });
     } else {
@@ -248,6 +246,7 @@ ipc.on("open-file", async (event) => {
   
 
 })
+
 
 // ! Allowing the user to choose a profile picture
 ipc.on("choose_profile_pic", async (event) => {
@@ -505,13 +504,6 @@ ipc.on("send-media", (event, data) => {
   }
   db_to_save = safe_storage.encryptString(JSON.stringify(active_user_db_object))
   local_db_io.save_contact(users_db_object["active"], db_to_save)
-
-
-  socket_functions.socket.on("recieve_media_msg", (data) => {
-    data["path"] = "./resources/" + data["path"].split("\\")[0]
-    path_to_save_media = data["path"]
-  })
-
 
 })
 

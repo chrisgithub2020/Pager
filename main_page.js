@@ -12,6 +12,7 @@ const homeDir = os.homedir()
 const { LocalFileData, getFileObjectFromLocalPath } = require("get-file-object-from-local-path");
 const { type } = require("os");
 const { time } = require("console");
+const { eventNames } = require("process");
 const allow_member_to_send_msg_checkBox = document.getElementById('allow-members-send-message');
 const allow_only_admins_to_send_msg_checkBox = document.getElementById("allow-only-admins-send-message")
 const allow_only_admins_to_change_profile_pic = document.getElementById("allow-only-admins-change-profile-pic")
@@ -23,6 +24,15 @@ const go_back_btns = document.getElementsByClassName("go-back")
 var localStream = null
 var remoteStream = null
 var call_ongoing = false
+const callRemoteStreamAudio = document.getElementById("callRemoteStreamAudio")
+let layout = document.getElementById(".")
+
+
+//When a user clicks a chat and want to start communicating
+let chat_to_perform_action = null
+var no_contact = false
+
+
 // Calling
 const stun_server = {
     iceServers: [
@@ -44,7 +54,7 @@ function TextMessage(type = "txt", uuid = crypto.randomUUID(), time = Date(), me
     this.name = name
 }
 // var message = { "uuid": crypto.randomUUID(), "time": Date(), "type": "txt", "path": '', "from": user_obj[user_obj["active"]]["email"], "to": account_db[panel_name]["email"], "name": panel_name }
-function MediaMessage(type, uuid = crypto.randomUUID(), time = Date(), from = user_obj[user_obj["active"]]["email"], to, name, path, mediaURL) {
+function MediaMessage(type, uuid = crypto.randomUUID(), time = Date(), from = user_obj[user_obj["active"]]["email"], to, name, path, mediaURL, albumCover = "default.jpg") {
     this.uuid = uuid
     this.time = time
     this.type = type
@@ -53,32 +63,85 @@ function MediaMessage(type, uuid = crypto.randomUUID(), time = Date(), from = us
     this.to = to
     this.name = name
     this.mediaURL = mediaURL
+    this.albumCover = albumCover
 }
-document.addEventListener("DOMContentLoaded", () => {
-    pc = new RTCPeerConnection(stun_server)
 
-    console.log(pc.connectionState)
+const Call = {
+    pc : new RTCPeerConnection(stun_server),
+    calltype: null,
+    localStream: null,
+    remoteStream: null,
+    constraint: null,
 
-
-    pc.onicecandidate = (event) => {
-        const cand_data = {
-            "cand": event.candidate,
-            "email": chat_to_perform_action
+    start: () => {
+        if (Call.calltype === "audio") {
+            Call.constraint = { "audio": true, "video": false }
+        } else if (Call.calltype === "video") {
+            Call.constraint = { "audio": true, "video": true }
         }
-        ipc.send("send-ice-cand", cand_data)
-        console.log("this is the ice candidate ", event.candidate)
+        return navigator.mediaDevices.getUserMedia(Call.constraint)
+            .then((stream) => {
+                Call.localStream = stream
+                Call.remoteStream = new MediaStream()
+                if (Call.calltype === "video"){
+                    document.getElementById("localStream-video").srcObject = Call.localStream
+
+                }
+
+                Call.localStream.getTracks().forEach((track) => {
+                    Call.pc.addTrack(track, Call.localStream)
+                })
+
+                Call.pc.ontrack = (event) => {
+                    event.streams[0].getTracks().forEach((track) => {
+                        Call.remoteStream.addTrack(track)
+                    })
+                    document.getElementById("remoteStream-video").srcObject = Call.remoteStream
+                }
+            })
+
+        Call.initiate_connection()
+
+    },
+
+    initiate_connection: async () => {
+
+        const offer = await pc.createOffer()
+        Call.pc.setLocalDescription(offer)
+
+        const offer_obj = {
+            "offer": offer,
+            "email": chat_to_perform_action,
+            "calltype": Call.calltype
+        }
+
+        ipc.send("send-offer", offer_obj)
+
+        ipc.on("offer-answer-received", (event, answer) => {
+            Call.pc.setRemoteDescription(answer)
+        })
     }
-})
+
+}
+
+Call.pc.onicecandidate = (event) => {
+    const cand_data = {
+        "cand": event.candidate,
+        "email": chat_to_perform_action
+    }
+    ipc.send("send-ice-cand", cand_data)
+    console.log("this is the ice candidate ", event.candidate)
+}
 
 ipc.on("icecandidate", (event, candidate) => {
-    pc.addIceCandidate(new RTCIceCandidate(event.candidate))
+    Call.pc.addIceCandidate(new RTCIceCandidate(event.candidate))
 })
 
 ipc.on("rtc-offer", async (event, offer) => {
-    // if (panel_visibility != true){
+    if (panel_visibility != true){
 
-    //     show_send_message_panel(verify_con)
-    // }
+        show_send_message_panel(contact_email_and_saved_name[offer["email"]])
+    }
 
 
     $("#chat").hide()
@@ -99,18 +162,20 @@ ipc.on("rtc-offer", async (event, offer) => {
                     Call.remoteStream = new MediaStream()
 
                     Call.localStream.getTracks().forEach((track) => {
-                        pc.addTrack(track, Call.localStream)
+                        Call.pc.addTrack(track, Call.localStream)
                     })
 
-                    pc.ontrack = (event) => {
+                    Call.pc.ontrack = (event) => {
                         event.streams[0].getTracks().forEach((track) => {
                             Call.remoteStream.addTrack(track)
+                            callRemoteStreamAudio.srcObject = Call.remoteStream
+                            callRemoteStreamAudio.play()
                         })
                     }
                 })
-            pc.setRemoteDescription(offer["offer"])
-            const answer = await pc.createAnswer()
-            pc.setLocalDescription(answer)
+            Call.pc.setRemoteDescription(offer["offer"])
+            const answer = await Call.pc.createAnswer()
+            Call.pc.setLocalDescription(answer)
 
             ipc.send("answer", { "answer": answer, "email": offer["email"] })
             call_ongoing = true
@@ -194,9 +259,7 @@ var creating_clique_members = []
 // When a user clicks a contact and wants to perform an action on the contact
 let contact_to_perform_action = "" // ! the name of a comtact as saved
 document.getElementById("message-contact").addEventListener("click", start_messaging_from_contacts)
-//When a user clicks a chat and want to start communicating
-let chat_to_perform_action = null
-var no_contact = false
+
 
 // Log Out
 document.getElementById("log-out").addEventListener("click", () => {
@@ -910,59 +973,7 @@ const show_send_message_panel = (panel_name, messages) => {
     buttons_container = document.getElementById("buttons-container")
     //// TODO:: Add p2p_connection_data field to data base
     console.log(account_db)
-    const Call = {
-        calltype: null,
-        localStream: null,
-        remoteStream: null,
-        constraint: null,
-
-        start: () => {
-            if (Call.calltype === "audio") {
-                Call.constraint = { "audio": true, "video": false }
-            } else if (Call.calltype === "video") {
-                Call.constraint = { "audio": true, "video": true }
-            }
-            return navigator.mediaDevices.getUserMedia(Call.constraint)
-                .then((stream) => {
-                    Call.localStream = stream
-                    Call.remoteStream = new MediaStream()
-                    document.getElementById("localStream-video").srcObject = Call.localStream
-
-                    Call.localStream.getTracks().forEach((track) => {
-                        pc.addTrack(track, Call.localStream)
-                    })
-
-                    pc.ontrack = (event) => {
-                        event.streams[0].getTracks().forEach((track) => {
-                            Call.remoteStream.addTrack(track)
-                        })
-                        document.getElementById("remoteStream-video").srcObject = Call.remoteStream
-                    }
-                })
-
-            Call.initiate_connection()
-
-        },
-
-        initiate_connection: async () => {
-
-            const offer = await pc.createOffer()
-            pc.setLocalDescription(offer)
-
-            const offer_obj = {
-                "offer": offer,
-                "email": chat_to_perform_action,
-                "calltype": Call.calltype
-            }
-
-            ipc.send("send-offer", offer_obj)
-
-            ipc.on("offer-answer-received", (event, answer) => {
-                pc.setRemoteDescription(answer)
-            })
-        }
-
-    }
+    
 
     voice_callBTN = document.getElementById("voice-call")
     voice_callBTN.addEventListener("click", (event) => {
@@ -1077,7 +1088,7 @@ const show_send_message_panel = (panel_name, messages) => {
     // * Adding functionality to attachment buttons
     // * Showing gallery div
     const gallery_btn = document.getElementById("gallery-btn");
-    let layout = document.getElementById(".")
+    
     gallery_btn.addEventListener("click", () => {
         layout.style.filter = "blur(8px)";
         close_menu()
@@ -1130,6 +1141,7 @@ const show_send_message_panel = (panel_name, messages) => {
             mediaMessage.path = data["path"]
             let blob = new Blob([data["cover"]], { type: "image/jpeg" })
             let album_cover = URL.createObjectURL(blob)
+            mediaMessage.albumCover = data["albumCover"]
             document.getElementById("show-file-details").innerHTML = `<div class="custom-audio-div">
                                                                         <div class="audio-image" style="background-image: url(${album_cover}); background-size:100% 100%">
 
@@ -1179,7 +1191,6 @@ const show_send_message_panel = (panel_name, messages) => {
     })
 
     document.getElementById("send-media-btn").addEventListener("click", (event) => {
-        ipc.send("save-album-cover", mediaMessage.uuid)
 
 
         insert_message("me", mediaMessage, "", mediaMessage.type)
@@ -1359,7 +1370,7 @@ const show_send_message_panel = (panel_name, messages) => {
     }
 }
 
-const insert_message = (sender, msg, time, message_type) => {
+const insert_message = async (sender, msg, time, message_type) => {
     if (message_type === "txt") {
 
         if (sender != "me") {
@@ -1395,8 +1406,8 @@ const insert_message = (sender, msg, time, message_type) => {
                                     <div class="text-group">
                                         <div class="text">
                                             <div class="custom-audio-div">
-                                                <div class="audio-image" style="background-image: url("C:\\Users\\AGYEMAN-PC\\.pager\\resources\\albumCovers\\8fbccca0-6544-4a06-9f9d-c73b799c838b.jpg"); background-size:100% 100%">
-                                                    
+                                                <div class="audio-image">
+                                                    <image src="data:image/png;base64,${msg["albumCover"]}" style="width:100%; height:100%;">
                                                 </div>
                                                 <div class="audio-controls-div">
                                                     <div class="audio-progress">
@@ -1426,8 +1437,8 @@ const insert_message = (sender, msg, time, message_type) => {
                                     <div class="text-group me">
                                         <div class="text me">
                                             <div class="custom-audio-div" style="width:300px;">
-                                                <div class="audio-image" style="background-image: url(${homeDir + "\\.pager\\resources\\albumCovers\\" + msg["uuid"] + ".jpg"}); background-size:100% 100%">
-                                                    
+                                                <div class="audio-image" >
+                                                    <image src="${homeDir+"\\.pager\\resources\\albumCovers\\"+msg["albumCover"]}" style="width:100%; height:100%;">
                                                 </div>
                                                 <div class="audio-controls-div">
                                                     <div class="audio-progress" style="margin-left:10px;">
@@ -1461,7 +1472,7 @@ const insert_message = (sender, msg, time, message_type) => {
                                     <div class="text-group">
                                         <div class="text" >
                                             <div id="brag" class="flex-justify-content">
-                                                <button type="button" class="btn download-play-video-btn"><i class="material-icons">photo</i></button>
+                                                <button data-id="${msg["path"]}" type="button" class="btn download-play-video-btn" id="${msg["uuid"]}-show-image-message-gallery"><i class="material-icons">photo</i></button>
                                                 <div style="width: 135px; padding-left: 20px; padding-top: 8px;">Image</div>
                                             </div>
                                         </div>
@@ -1475,7 +1486,7 @@ const insert_message = (sender, msg, time, message_type) => {
                                     <div class="text-group me">
                                         <div class="text me" >
                                             <div id="brag" class="flex-justify-content">
-                                                <button type="button" class="btn download-play-video-btn"><i class="material-icons">photo</i></button>
+                                                <button data-id="${msg["path"]}" type="button" class="btn download-play-video-btn" id="${msg["uuid"]}-show-image-message-gallery"><i class="material-icons">photo</i></button>
                                                 <div style="width: 135px; padding-left: 20px; padding-top: 8px;">Image</div>
                                             </div>
                                         </div>
@@ -1518,6 +1529,44 @@ const insert_message = (sender, msg, time, message_type) => {
         }
     }
 
+    // if (message_type === "other"){
+    //     if (sender != "me"){
+    //         var msg_html = `<div class="message">
+    //                             <div class="text-main">
+    //                                 <div class="text-group">
+    //                                     <div class="text">
+    //                                         <div class="attachment">
+    //                                             <button class="btn attach"><i class="material-icons md-18">insert_drive_file</i></button>
+    //                                             <div class="file">
+    //                                                 <h5><a href="#">${}</a></h5>
+    //                                                 <span>${} Document</span>
+    //                                             </div>
+    //                                         </div>
+    //                                     </div>
+    //                                 </div>
+    //                                 <span>11:07 PM</span>
+    //                             </div>
+    //                         </div>`
+    //     } else if|(sender === "me"){
+    //         var msg_html = `<div class="message">
+    //                             <div class="text-main">
+    //                                 <div class="text-group">
+    //                                     <div class="text">
+    //                                         <div class="attachment">
+    //                                             <button class="btn attach"><i class="material-icons md-18">insert_drive_file</i></button>
+    //                                             <div class="file">
+    //                                                 <h5><a href="#">${}</a></h5>
+    //                                                 <span>${} Document</span>
+    //                                             </div>
+    //                                         </div>
+    //                                     </div>
+    //                                 </div>
+    //                                 <span>11:07 PM</span>
+    //                             </div>
+    //                         </div>`
+    //     }
+    // }
+
 
     show_message.insertAdjacentHTML("beforeend", msg_html)
     document.getElementById(msg["uuid"]).addEventListener("contextmenu", (event) => {
@@ -1547,6 +1596,25 @@ const insert_message = (sender, msg, time, message_type) => {
                 }
             })
         })
+    }
+
+    if (message_type === "image"){
+        document.getElementById(`${msg["uuid"]}-show-image-message-gallery`).addEventListener("click",(event)=>{
+            let image_id = event.currentTarget.dataset.id
+            console.log(image_id,"dataset")
+            const image_html = `<button id="close-gallery-button" class="btn"><i class="material-icons">close</i></button>
+                                <img id="gallery-img" src="${image_id}" alt="">`
+            gallery_div.innerHTML = image_html
+            // * Closing gallery div
+            const close_gallry_btn = document.getElementById("close-gallery-button");
+            close_gallry_btn.addEventListener("click", () => {
+                layout.style.filter = "blur(0px)";
+                gallery_div.style.display = "none";
+            })
+            layout.style.filter = "blur(8px)";
+            gallery_div.style.display = "block";
+        })
+        
     }
 
 }

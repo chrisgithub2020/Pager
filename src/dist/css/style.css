@@ -737,3 +737,21 @@ img#chat-profile-photo {
   border-radius: 100%;
   color: white;
 }
+
+#gallery-img {
+  height: 100%;
+  width: 80%;
+}
+
+#close-gallery-button {
+  position:absolute;
+  top:0;
+  left: 0;
+  z-index: 2000;
+  color: white;
+}
+
+#gallery-div {
+  padding-left: 10%;
+  padding-right: 10%;
+}

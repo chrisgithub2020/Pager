@@ -5,7 +5,11 @@ import json
 from utils import Utils
 from database import DataBase
 from datetime import datetime
+import base64
+from mutagen import File
 from threading import Thread
+from io import BytesIO
+from PIL import Image
 users_online = {}
 
 DB = DataBase()
@@ -37,8 +41,6 @@ def update_status(sid, filter):
         if isFile:
             json_msg = json.load(file)
             print(json_msg)
-
-
 
 
 @sio.event
@@ -137,7 +139,6 @@ def media_message(sid, msg_data: dict):
     msg_data["recipient"] = msg_data["to"]
     msg_data["path"] = msg_data["mediaURL"]
 
-
     msg_data["id"] = msg_data["uuid"]
     msg_data.pop("uuid")
 
@@ -175,7 +176,29 @@ def media_message(sid, msg_data: dict):
             with open(file=f"./saved-messages/{recipient['email']}.json", mode="w") as file:
                 json.dump(json_content, file)
         else:
-            sio.emit(to=recipient["sid"],event="recieve_message",data=msg_data)
+            if msg_data["type"] == "audio":
+                audio_file = File(msg_data["mediaURL"]) # Replace with your audio file
+                if "APIC:" in audio_file.tags:
+                    apic = audio_file.tags["APIC:"].data
+                    image_data = apic
+
+                    # Open the image using PIL and create a thumbnail
+                    with BytesIO(image_data) as f:
+                        with Image.open(f) as img:
+                            img.thumbnail((100, 100))
+                            thumbnail_data = BytesIO()
+                            img.save(thumbnail_data, format='JPEG')
+
+                    # Get the Base64-encoded thumbnail data
+                    thumbnail_b64 = base64.b64encode(thumbnail_data.getvalue()).decode()
+
+                    # Print the Base64-encoded thumbnail data
+                    print(thumbnail_b64)
+                    msg_data["albumCover"] = thumbnail_b64
+                else:
+                    print("No album cover found")
+            sio.emit(to=recipient["sid"],
+                     event="recieve_message", data=msg_data)
 
 
 @sio.event
@@ -217,7 +240,7 @@ def create_clique(sid, info):
 
     for m in post["members"]:
         DB.update(filter={"email": m}, update={
-                        "$push": {"cliques": info["link"]}}, table=DB.users_table)
+            "$push": {"cliques": info["link"]}}, table=DB.users_table)
         if m in users_online:
             sio.enter_room(sid=users_online[m], room=info["link"])
         else:
@@ -229,7 +252,8 @@ def create_clique(sid, info):
 @sio.event
 def send_clique_message(sid, message):
     clique = DB.find(filter={"link": message["to"]}, table=DB.clique_table)
-    sio.emit(data=message, event="recieve_message",room=message["to"],skip_sid=sid)
+    sio.emit(data=message, event="recieve_message",
+             room=message["to"], skip_sid=sid)
 
     for user in clique["members"]:
         recipient = DB.find(filter={"email": user}, table=DB.users_table)
@@ -243,15 +267,12 @@ def send_clique_message(sid, message):
 def disconnect(sid):
     print('disconnect ', sid)
     DB.update(filter={"sid": sid}, update={
-              "$set": {"online_status": 0,"last_seen":datetime.today()}}, table=DB.users_table)
-    
-    ## Removes you from the dictionary that keeps track of users thath are online
-    user = DB.find(filter={"sid":sid},table=DB.users_table)
+              "$set": {"online_status": 0, "last_seen": datetime.today()}}, table=DB.users_table)
+
+    # Removes you from the dictionary that keeps track of users thath are online
+    user = DB.find(filter={"sid": sid}, table=DB.users_table)
     users_online.pop(user["email"])
     print(users_online)
-
-
-    
 
 
 @sio.event
@@ -265,18 +286,20 @@ def send_ice_cand(sid, obj):
 
 @sio.event
 def send_offer(sid, offer_obj):
+    print(offer_obj)
     callee = DB.find(
         filter={"email": offer_obj["email"]}, table=DB.users_table)
     caller = DB.find(filter={"sid": sid}, table=DB.users_table)
     if callee != None:
         if callee["online_status"] == 1:
             offer_obj = {
-                "answer": offer_obj["answer"], "email": caller["email"]}
-            sio.emit("rtc-offer", offer_obj, callee["sid"])
+                "offer": offer_obj["offer"], "email": caller["email"], "calltype": offer_obj["calltype"]}
+            sio.emit(event="rtc-offer", data=offer_obj, to=callee["sid"])
 
 
 @sio.event
 def send_answer(sid, answer_obj):
+    print(answer_obj)
     caller = DB.find(
         filter={"email": answer_obj["email"]}, table=DB.users_table)
     caller = DB.find(filter={"sid": sid}, table=DB.users_table)
@@ -285,8 +308,6 @@ def send_answer(sid, answer_obj):
             answer_obj = {
                 "answer": answer_obj["answer"], "email": caller["email"]}
             sio.emit("rtc-offer", answer_obj, caller["sid"])
-
-
 
 
 def thread_for_joining_cliques(sid, cliques):
