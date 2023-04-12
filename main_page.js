@@ -4,6 +4,7 @@ const crypto = require("crypto");
 const { desktopCapturer } = require("electron");
 const fs = require("fs");
 const axios = require("axios")
+// const constants = require("./constants.js")
 const path = require("path")
 const http = require("http")
 const media_tags = require("jsmediatags")
@@ -54,7 +55,7 @@ function TextMessage(type = "txt", uuid = crypto.randomUUID(), time = Date(), me
     this.name = name
 }
 // var message = { "uuid": crypto.randomUUID(), "time": Date(), "type": "txt", "path": '', "from": user_obj[user_obj["active"]]["email"], "to": account_db[panel_name]["email"], "name": panel_name }
-function MediaMessage(type, uuid = crypto.randomUUID(), time = Date(), from = user_obj[user_obj["active"]]["email"], to, name, path, mediaURL, albumCover = "default.jpg") {
+function MediaMessage(type, uuid = crypto.randomUUID(), time = Date(), from = user_obj[user_obj["active"]]["email"], to, name, path, mediaURL, albumCover = "music.png") {
     this.uuid = uuid
     this.time = time
     this.type = type
@@ -67,7 +68,7 @@ function MediaMessage(type, uuid = crypto.randomUUID(), time = Date(), from = us
 }
 
 const Call = {
-    pc : new RTCPeerConnection(stun_server),
+    pc: new RTCPeerConnection(stun_server),
     calltype: null,
     localStream: null,
     remoteStream: null,
@@ -83,7 +84,7 @@ const Call = {
             .then((stream) => {
                 Call.localStream = stream
                 Call.remoteStream = new MediaStream()
-                if (Call.calltype === "video"){
+                if (Call.calltype === "video") {
                     document.getElementById("localStream-video").srcObject = Call.localStream
 
                 }
@@ -138,7 +139,7 @@ ipc.on("icecandidate", (event, candidate) => {
 })
 
 ipc.on("rtc-offer", async (event, offer) => {
-    if (panel_visibility != true){
+    if (panel_visibility != true) {
 
         show_send_message_panel(contact_email_and_saved_name[offer["email"]])
     }
@@ -573,7 +574,6 @@ ipc.on("display_utility_on_startup", async (event, data) => {
         keys.forEach((value, index, number) => {
             console.log(contacts[value])
             if (contacts[value]["type"] === "clique") {
-                console.log("This is a clique", account_db[value])
                 clique_list.push(contacts[value]["name"])
 
                 if ("messages" in account_db[value]) {
@@ -585,11 +585,9 @@ ipc.on("display_utility_on_startup", async (event, data) => {
                 }
 
             } else if (contacts[value]["type"] === "contact") {
-                console.log("This is just a contact")
 
                 if ("messages" in contacts[value]) {
                     if (contacts[value]["messages"].length > 0) {
-                        console.log(value)
 
                         insert_chat_card(value, account_db[value]["messages"][account_db[value]["messages"].length - 1])
                     }
@@ -630,7 +628,6 @@ ipc.on("display_utility_on_startup", async (event, data) => {
 })
 
 function start_messaging_from_contacts() {
-    console.log("it is clicked")
 
     if (verify_displayed_chat_card_email_list.length > 0) {
 
@@ -640,7 +637,6 @@ function start_messaging_from_contacts() {
 
 
             } else {
-                console.log("else block")
                 insert_chat_card(contact_to_perform_action)
                 show_send_message_panel(contact_to_perform_action)
             }
@@ -681,11 +677,9 @@ ipc.on("message", (event, msg) => {
 
             account_db[db["name"]] = db
             contact_email_and_saved_name[db["email"]] = db["name"]
-            console.log(contact_email_and_saved_name[msg["from"]], "contact email and saved name")
 
             ipc.send("save_contact_in_runtime", db)
             db["user_saving_name"] = db["name"]
-            console.log("db with user_saving_name", db)
 
             ipc.send("save_message_new_contact", db["name"], msg) // uses this because by the time the request is sent to the main save message the contact is not saved yet
             no_contact = false
@@ -703,22 +697,18 @@ ipc.on("message", (event, msg) => {
     } else {
         if (!account_db[contact_email_and_saved_name[msg["from"]]] && !account_db[contact_email_and_saved_name[msg["to"]]]) {
             // Meaning contact does not exist
-            console.log("contact does not exist")
 
             /// Getting details of unknown contact
             info = JSON.stringify({ "email": msg["from"], "request_type": "message_from_unknown_source" })
             ipc.send("get_info", info)
 
             ipc.on("info_received", (event, db) => {
-                console.log("original db ", db)
 
                 account_db[db["name"]] = db
                 contact_email_and_saved_name[db["email"]] = db["name"]
-                console.log(contact_email_and_saved_name[msg["from"]], "contact email and saved name")
 
                 ipc.send("save_contact_in_runtime", db)
                 db["user_saving_name"] = db["name"]
-                console.log("db with user_saving_name", db)
 
                 ipc.send("save_message_new_contact", db["name"], msg) // uses this because by the time the request is sent to the main save message the contact is not saved yet
                 no_contact = false
@@ -801,7 +791,7 @@ ipc.on("message", (event, msg) => {
     }
 
     if (msg["type"] != "txt") {
-        fetch(`http://127.0.0.1:8000/file/${msg["mediaURL"]}`, {
+        fetch(`https://3a59-102-176-3-170.ngrok-free.app/file/${msg["mediaURL"]}`, {
             method: 'GET'
         })
             .then(async (response) => {
@@ -821,7 +811,7 @@ ipc.on("message", (event, msg) => {
 
                         // Now you can use the 'buffer' object as needed, e.g. save to disk using fs.writeFile() in Node.js
                         // ...
-                        fs.writeFileSync(msg["path"], buffer);
+                        fs.writeFileSync(homeDir + "//.pager//resources//media_messages//" + msg["path"], buffer);
 
                     };
 
@@ -864,7 +854,6 @@ const insert_chat_card = async (card_name, msg) => {
                         </a>`
 
     }
-    console.log("Is everython ok")
     message_hint_element[card_name] = document.createElement("div")
     message_hint_element[card_name].innerText = msg["message"]
     chats_container.insertAdjacentHTML("afterbegin", chat_card)
@@ -972,8 +961,7 @@ const show_send_message_panel = (panel_name, messages) => {
     send_audio_btn = document.getElementById("send-audio")
     buttons_container = document.getElementById("buttons-container")
     //// TODO:: Add p2p_connection_data field to data base
-    console.log(account_db)
-    
+
 
     voice_callBTN = document.getElementById("voice-call")
     voice_callBTN.addEventListener("click", (event) => {
@@ -995,7 +983,6 @@ const show_send_message_panel = (panel_name, messages) => {
     $("#contactsModal").modal("hide")
     $(".connect").click(() => {
         // $("#chatInfo").modal("hide")
-        console.log($("#chat" + $(this).attr("name")))
         $("#chat").hide()
         $("#call").show()
     })
@@ -1037,8 +1024,6 @@ const show_send_message_panel = (panel_name, messages) => {
     document.getElementById("msg-area-div").insertAdjacentElement("afterbegin", emoji_container)
 
     document.getElementById("insert_emoji").addEventListener("mouseover", (event) => {
-        console.log("show emoji")
-        console.log(document.getElementById("message-area").clientTop)
 
         emoji_container.style.bottom = 70 + "px"
         emoji_container.style.left = document.getElementById("sidebar").clientWidth + 15 + "px"
@@ -1088,7 +1073,7 @@ const show_send_message_panel = (panel_name, messages) => {
     // * Adding functionality to attachment buttons
     // * Showing gallery div
     const gallery_btn = document.getElementById("gallery-btn");
-    
+
     gallery_btn.addEventListener("click", () => {
         layout.style.filter = "blur(8px)";
         close_menu()
@@ -1117,7 +1102,6 @@ const show_send_message_panel = (panel_name, messages) => {
     // ! *****************************************************
     let mediaMessage = new MediaMessage()
     ipc.on("file-chosen", (event, data) => {
-        console.log(data, "this is the data")
         mediaMessage.uuid = crypto.randomUUID()
         mediaMessage.time = Date()
         if (data["data_abt_file"].includes("video")) {
@@ -1127,6 +1111,7 @@ const show_send_message_panel = (panel_name, messages) => {
                                                                     <video controls width="250" id="sending-video-ele">                
                                                                         <source src="${data["path"]}" type="${data["data_abt_file"]["mime"]}">
                                                                     </video>`
+
         }
 
         if (data["data_abt_file"].includes("image")) {
@@ -1136,7 +1121,6 @@ const show_send_message_panel = (panel_name, messages) => {
         }
 
         if (data["data_abt_file"].includes("audio")) {
-            console.log(data)
             mediaMessage.type = "audio"
             mediaMessage.path = data["path"]
             let blob = new Blob([data["cover"]], { type: "image/jpeg" })
@@ -1181,11 +1165,16 @@ const show_send_message_panel = (panel_name, messages) => {
             })
 
         }
+        if (!data["data_abt_file"].includes("audio") && !data["data_abt_file"].includes("video") && !data["data_abt_file"].includes("image")){
+            mediaMessage.type = "other"
+            mediaMessage.path = data["path"]
+        }
 
 
 
 
         $("#confirmFileModal").modal({ backdrop: 'static', keyboard: false })
+
 
 
     })
@@ -1208,14 +1197,13 @@ const show_send_message_panel = (panel_name, messages) => {
 
         // Send a POST request to the server with the file data
 
-        fetch('http://127.0.0.1:8000/uploadfile', {
+        fetch("https://3a59-102-176-3-170.ngrok-free.app/uploadfile", {
             method: 'POST',
             body: formData
         })
             .then(response => {
                 // Handle the server response
                 if (response["success"] === true) {
-                    console.log(response)
                     mediaMessage.mediaURL = response["mediaURL"]
                     // Sending message details to recipient but first goes through socket sever
                     ipc.send("send-media", mediaMessage)
@@ -1245,14 +1233,22 @@ const show_send_message_panel = (panel_name, messages) => {
 
     // ! SENDING AUDIO
     const audioRecorder = {
-        message: { "uuid": crypto.randomUUID(), "time": Date(), "type": "audio", "chunks": [], "from": user_obj[user_obj["active"]]["email"], "to": account_db[panel_name]["email"], "name": panel_name },
+        message: new MediaMessage(),
         audioChunks: [],
         mediaRecorder: null,
         constraint: { audio: true, video: false },
 
         start: () => {
+            audioRecorder.message.uuid = crypto.randomUUID()
+            audioRecorder.message.to = account_db[panel_name]["email"]
+            audioRecorder.message.name = panel_name
+            audioRecorder.message.albumCover = "music.png"
+            audioRecorder.message.path = `${homeDir + "//.pager//resources//media_messages//" + audioRecorder.message["uuid"]}.wav`
+            audioRecorder.message.type = "audio"
             return navigator.mediaDevices.getUserMedia(audioRecorder.constraint)
                 .then((stream) => {
+                   
+
                     audioRecorder.mediaRecorder = new MediaRecorder(stream)
                     audioRecorder.mediaRecorder.start()
 
@@ -1264,12 +1260,46 @@ const show_send_message_panel = (panel_name, messages) => {
                     audioRecorder.mediaRecorder.onstop = (event) => {
                         // console.log(event)
                         // audioRecorder.message["chunks"] = audioRecorder.audioChunks
-                        let audio_blob = new Blob(audioRecorder.audioChunks,{ type: 'audio/webm;codecs=opus' })
+                        let audio_blob = new Blob(audioRecorder.audioChunks, { type: 'audio/webm;codecs=opus' })
 
-                        console.log("audio blob size ===> ",audio_blob.size)
+                        let file = new File([audio_blob], audioRecorder.message["uuid"]+".wav")
+                        // Create a FormData object and append the file to it
+                        const formData = new FormData();
+                        formData.append('file', file);
+
+                        // Send a POST request to the server with the file data
+
+                        fetch("https://3a59-102-176-3-170.ngrok-free.app/uploadfile", {
+                            method: 'POST',
+                            body: formData
+                        })
+                            .then(response => {
+                                    console.log(response)
+                                    // Handle the server response
+                                if (response.ok === true) {
+                                    console.log(response)
+                                    audioRecorder.message.mediaURL = response["mediaURL"]
+                                    // Sending message details to recipient but first goes through socket sever
+                                    if (clique_list.includes(panel_name)) {
+                                        audioRecorder.message.to = panel_name
+                                        ipc.send("send_clique_message", message)
+                                        insert_message("me", audioRecorder.message, "", audioRecorder.message.type)
+
+                                    } else {
+                                        audioRecorder.message.to = account_db[panel_name]["email"]
+
+                                        ipc.send("send-media", audioRecorder.message)
+                                        console.log(audioRecorder.message)
 
 
-                        console.log("audio blob" ,audio_blob)
+                                        insert_message("me", audioRecorder.message, "", audioRecorder.message.type)
+                                    }
+
+                                }
+                            })
+                            .catch(error => {
+                                console.error(error);
+                            });
                         const reader = new FileReader();
 
                         // Set up a callback for when the FileReader has loaded the contents of the Blob
@@ -1282,24 +1312,13 @@ const show_send_message_panel = (panel_name, messages) => {
 
                             // Now you can use the 'buffer' object as needed, e.g. save to disk using fs.writeFile() in Node.js
                             // ...
-                            fs.writeFileSync(`${audioRecorder.message["uuid"]}.wav`, buffer);
+                            fs.writeFileSync(`${homeDir + "//.pager//resources//media_messages//" + audioRecorder.message["uuid"]}.wav`, buffer);
 
                         };
 
                         // Read the contents of the Blob as an ArrayBuffer
                         reader.readAsArrayBuffer(audio_blob);
-                        if (clique_list.includes(panel_name)) {
-                            message.to = panel_name
-                            ipc.send("send_clique_message", message)
-                            insert_message("me", message, "", message["type"])
 
-                        } else {
-                            message.to = account_db[panel_name]["email"]
-
-                            ipc.send("send_text_message", JSON.stringify(message))
-
-                            insert_message("me", message, "", message["type"])
-                        }
                     }
 
                     audioRecorder.mediaRecorder.ondataavailable = async (event) => {
@@ -1326,7 +1345,7 @@ const show_send_message_panel = (panel_name, messages) => {
     send_audio_btn.addEventListener("mouseup", async (event) => {
         await audioRecorder.stop()
 
-        
+
         clearTimeout(timeout_id)
     })
 
@@ -1400,14 +1419,23 @@ const insert_message = async (sender, msg, time, message_type) => {
     }
 
     if (message_type === "audio") {
+        let cover = null
+        let audio_source = null
         if (sender != "me") {
+            console.log("this is path to audio Message",`${homeDir + "//.pager//resources//media_messages//" + msg["path"]}`)
+            if (msg["albumCover"] === "music.png"){
+                cover = msg["albumCover"]
+            } else {
+                cover = `data:image/png;base64,${msg["albumCover"]}`
+            }
+            console.log(msg["uuid"])
             var msg_html = `<div class="message" id="${msg["uuid"]}">
                                 <div class="text-main">
                                     <div class="text-group">
                                         <div class="text">
                                             <div class="custom-audio-div">
                                                 <div class="audio-image">
-                                                    <image src="data:image/png;base64,${msg["albumCover"]}" style="width:100%; height:100%;">
+                                                    <image src="${cover}" style="width:100%; height:100%;">
                                                 </div>
                                                 <div class="audio-controls-div">
                                                     <div class="audio-progress">
@@ -1422,7 +1450,7 @@ const insert_message = async (sender, msg, time, message_type) => {
                                                     </div>
                                                 </div>
                                                 <audio id="${msg["uuid"]}-audio">
-                                                    <source src="${msg["path"]}">
+                                                    <source src="${homeDir + "//.pager//resources//media_messages//" + msg["path"]}">
                                                 </audio>
                                             </div>
                                         </div>
@@ -1432,13 +1460,19 @@ const insert_message = async (sender, msg, time, message_type) => {
                             </div>`
 
         } else if (sender === "me") {
+            if (msg["albumCover"] === "music.png"){
+                cover = msg["albumCover"]
+            } else {
+                cover = `${homeDir + "\\.pager\\resources\\albumCovers\\" + msg["albumCover"]}`
+            }
+            
             var msg_html = `<div class="message me" id="${msg["uuid"]}">
                                 <div class="text-main">
                                     <div class="text-group me">
                                         <div class="text me">
                                             <div class="custom-audio-div" style="width:300px;">
                                                 <div class="audio-image" >
-                                                    <image src="${homeDir+"\\.pager\\resources\\albumCovers\\"+msg["albumCover"]}" style="width:100%; height:100%;">
+                                                    <image src="${cover}" style="width:100%; height:100%;">
                                                 </div>
                                                 <div class="audio-controls-div">
                                                     <div class="audio-progress" style="margin-left:10px;">
@@ -1472,7 +1506,7 @@ const insert_message = async (sender, msg, time, message_type) => {
                                     <div class="text-group">
                                         <div class="text" >
                                             <div id="brag" class="flex-justify-content">
-                                                <button data-id="${msg["path"]}" type="button" class="btn download-play-video-btn" id="${msg["uuid"]}-show-image-message-gallery"><i class="material-icons">photo</i></button>
+                                                <button data-id="${homeDir + "//.pager//resources//media_messages//" + msg["path"]}" type="button" class="btn download-play-video-btn" id="${msg["uuid"]}-show-image-message-gallery"><i class="material-icons">photo</i></button>
                                                 <div style="width: 135px; padding-left: 20px; padding-top: 8px;">Image</div>
                                             </div>
                                         </div>
@@ -1504,7 +1538,7 @@ const insert_message = async (sender, msg, time, message_type) => {
                                     <div class="text-group">
                                         <div class="text" >
                                             <div id="brag" class="flex-justify-content">
-                                                <button type="button" class="btn download-play-video-btn"><i class="material-icons">movie</i></button>
+                                                <button data-id="${homeDir + "//.pager//resources//media_messages//" + msg["path"]}" type="button" class="btn download-play-video-btn" id="${msg["uuid"]}-show-video-message-gallery"><i class="material-icons">movie</i></button>
                                                 <div style="width: 135px; padding-left: 20px; padding-top: 8px;">Video</div>
                                             </div>
                                         </div>
@@ -1518,7 +1552,7 @@ const insert_message = async (sender, msg, time, message_type) => {
                                     <div class="text-group me">
                                         <div class="text me" >
                                             <div id="brag" class="flex-justify-content">
-                                                <button type="button" class="btn download-play-video-btn"><i class="material-icons">movie</i></button>
+                                                <button data-id="${msg["path"]} type="button" class="btn download-play-video-btn" id="${msg["uuid"]}-show-video-message-gallery"><i class="material-icons">movie</i></button>
                                                 <div style="width: 135px; padding-left: 20px; padding-top: 8px;">Video</div>
                                             </div>
                                         </div>
@@ -1529,43 +1563,43 @@ const insert_message = async (sender, msg, time, message_type) => {
         }
     }
 
-    // if (message_type === "other"){
-    //     if (sender != "me"){
-    //         var msg_html = `<div class="message">
-    //                             <div class="text-main">
-    //                                 <div class="text-group">
-    //                                     <div class="text">
-    //                                         <div class="attachment">
-    //                                             <button class="btn attach"><i class="material-icons md-18">insert_drive_file</i></button>
-    //                                             <div class="file">
-    //                                                 <h5><a href="#">${}</a></h5>
-    //                                                 <span>${} Document</span>
-    //                                             </div>
-    //                                         </div>
-    //                                     </div>
-    //                                 </div>
-    //                                 <span>11:07 PM</span>
-    //                             </div>
-    //                         </div>`
-    //     } else if|(sender === "me"){
-    //         var msg_html = `<div class="message">
-    //                             <div class="text-main">
-    //                                 <div class="text-group">
-    //                                     <div class="text">
-    //                                         <div class="attachment">
-    //                                             <button class="btn attach"><i class="material-icons md-18">insert_drive_file</i></button>
-    //                                             <div class="file">
-    //                                                 <h5><a href="#">${}</a></h5>
-    //                                                 <span>${} Document</span>
-    //                                             </div>
-    //                                         </div>
-    //                                     </div>
-    //                                 </div>
-    //                                 <span>11:07 PM</span>
-    //                             </div>
-    //                         </div>`
-    //     }
-    // }
+    if (message_type === "other"){
+        if (sender != "me"){
+            var msg_html = `<div class="message">
+                                <div class="text-main">
+                                    <div class="text-group">
+                                        <div class="text">
+                                            <div class="attachment">
+                                                <button class="btn attach"><i class="material-icons md-18">insert_drive_file</i></button>
+                                                <div class="file">
+                                                    <h5><a href="#">${msg["path"]}</a></h5>
+                                                    <span> Document</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span>11:07 PM</span>
+                                </div>
+                            </div>`
+        } else if|(sender === "me"){
+            var msg_html = `<div class="message">
+                                <div class="text-main">
+                                    <div class="text-group">
+                                        <div class="text">
+                                            <div class="attachment">
+                                                <button class="btn attach"><i class="material-icons md-18">insert_drive_file</i></button>
+                                                <div class="file">
+                                                    <h5><a href="#">${msg["path"].split('/').pop()}</a></h5>
+                                                    <span> Document</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span>11:07 PM</span>
+                                </div>
+                            </div>`
+        }
+    }
 
 
     show_message.insertAdjacentHTML("beforeend", msg_html)
@@ -1580,6 +1614,7 @@ const insert_message = async (sender, msg, time, message_type) => {
     if (message_type === "audio") {
         document.getElementById(`${msg["uuid"]}-send-audio-message-play-pause`).addEventListener("click", (event) => {
             play_pause_audio(`${msg["uuid"]}-send-audio-message-play-pause`, `${msg["uuid"]}-audio`)
+            console.log("play or pause audio",msg["uuid"])
         })
 
         document.getElementById(`${msg["uuid"]}-audio`).addEventListener("timeupdate", async (event) => {
@@ -1598,10 +1633,10 @@ const insert_message = async (sender, msg, time, message_type) => {
         })
     }
 
-    if (message_type === "image"){
-        document.getElementById(`${msg["uuid"]}-show-image-message-gallery`).addEventListener("click",(event)=>{
+    if (message_type === "image") {
+        document.getElementById(`${msg["uuid"]}-show-image-message-gallery`).addEventListener("click", (event) => {
             let image_id = event.currentTarget.dataset.id
-            console.log(image_id,"dataset")
+            console.log(image_id, "dataset")
             const image_html = `<button id="close-gallery-button" class="btn"><i class="material-icons">close</i></button>
                                 <img id="gallery-img" src="${image_id}" alt="">`
             gallery_div.innerHTML = image_html
@@ -1610,11 +1645,31 @@ const insert_message = async (sender, msg, time, message_type) => {
             close_gallry_btn.addEventListener("click", () => {
                 layout.style.filter = "blur(0px)";
                 gallery_div.style.display = "none";
+
             })
             layout.style.filter = "blur(8px)";
             gallery_div.style.display = "block";
         })
-        
+
+    }
+
+    if (message_type === "video"){
+        document.getElementById(`${msg["uuid"]}-show-video-message-gallery`).addEventListener("click",(event)=>{
+            let video_id = event.currentTarget.dataset.id
+
+            const video_html = `<button id="close-gallery-button" class="btn"><i class="material-icons">close</i></button>
+                                <video id="gallery-video" src="${video_id}"></video>`
+            gallery_div.innerHTML = image_html
+            // * Closing gallery div
+            const close_gallry_btn = document.getElementById("close-gallery-button");
+            close_gallry_btn.addEventListener("click", () => {
+                layout.style.filter = "blur(0px)";
+                gallery_div.style.display = "none";
+
+            })
+            layout.style.filter = "blur(8px)";
+            gallery_div.style.display = "block";
+        })
     }
 
 }

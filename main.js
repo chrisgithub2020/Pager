@@ -394,7 +394,6 @@ ipc.on("verify_contact", (event, contact_details) => {
       active_user_db_object[contact_info["user_saving_name"]] = { "name": contact_info["name"], "email": contact_info["email"], "last_seen": contact_info["last_seen"], "profile_picture": contact_info["profile_pic"] }
       console.log(active_user_db_object)
       event.sender.send("contact_exists", contact_info)
-      // event.sender.send("unknown_contact_exists", contact_info)
     }
   })
 })

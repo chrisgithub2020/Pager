@@ -1,6 +1,7 @@
 const electron = require("electron")
 const ipc = electron.ipcRenderer
 const fs = require("fs")
+// const constants = require("./constants")
 
 var signUP_button = document.getElementById("sign-up-button")
 var fields = document.querySelectorAll("#inputEmail, #inputName, #inputPassword")
@@ -78,8 +79,11 @@ function submit_form_data() {
 
         // CHECKING IF ALL REQUIRED FIELDS HAVE BEEN FILLED
     } if (username_verification == true && password_verification == true && email_verification == true) {
+        if (form_data["profile_picture"] === ""){
+            convert_image_to_base64("./dist/img/default_profile_pic.jpg")
+        }
         // ipc.send("reg-user", form_data)
-        fetch('http://127.0.0.1:8000/register_user', {
+        fetch("https://3a59-102-176-3-170.ngrok-free.app/register_user", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -122,22 +126,9 @@ pick_profile_picture.addEventListener("click", choose_profile_pic)
 // WHEN A PROFILE PICTURE IS SELECTED
 ipc.on("change_picture", (event, image_path) => {
     // THIS PART UPDATES THE PROFILE PICTURE AND CONVERTS IT TO BASE_64 TO BE SENT TO SERVER
-
-    // UPDATING PROFILE PICTURE
-    var display_profile_picture = "<img id='sign-up-profile-picture' src=" + image_path + " alt=''>"
-    profile_picture_div.innerHTML = display_profile_picture
-
-    // CONVERTING TO BASE_64
-    base64_image = fs.readFileSync(image_path, { encoding: "base64" })
-    form_data["profile_picture"] = base64_image
+    convert_image_to_base64(image_path)
+    
 })
-
-// THIS PART IS CALLED WHEN ALL DETAILS HAVE BEEN SENT TO THE SERVER
-// ipc.on("reg_details_recieved", (event, email) => {
-//     $('#signUp-button-div').html('<div class="reg-details-sent"><span><i class="material-icons"></i></span>Sent</div>').addClass('disabled');
-//     $('#enterVerificationCode').modal({ backdrop: 'static', keyboard: false })
-//     verified_email = email
-// })
 
 
 function send_verification_code() {
@@ -146,7 +137,7 @@ function send_verification_code() {
     if (code.length === 7) {
         $('#show-verification-result').html('<span class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span>Loading...').addClass('disabled');
         var verification_details = JSON.stringify({ "email": verified_email, "code": code })
-        fetch('http://127.0.0.1:8000/verify_code', {
+        fetch("https://3a59-102-176-3-170.ngrok-free.app/verify_code", {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json'
@@ -171,12 +162,12 @@ function send_verification_code() {
     }
 }
 
-// ipc.on("verification_success", (event, results) => {
-//     if (Object.keys(results).length > 1) {
-//         $('#show-verification-result').html('<div class="reg-details-sent"><span><i class="material-icons"></i></span style="color:green;">Verification complete</div>').addClass('disabled');
-//         $("#enterVerificationCode").modal("hide")
-//         event.sender.send("sign-up-complete", results)
-//     } else if (results === 0) {
-//         $('#show-verification-result').html('<div class="wrond-verification-code"><span><i class="material-icons"></i></span>Verification Code is wrong</div>').addClass('disabled');
-//     }
-// })
+const convert_image_to_base64 = (image_path)=>{
+    // UPDATING PROFILE PICTURE
+    var display_profile_picture = `<img id='sign-up-profile-picture' src="${image_path}" alt=''>`
+    profile_picture_div.innerHTML = display_profile_picture
+
+    // CONVERTING TO BASE_64
+    base64_image = fs.readFileSync(image_path, { encoding: "base64" })
+    form_data["profile_picture"] = base64_image
+}

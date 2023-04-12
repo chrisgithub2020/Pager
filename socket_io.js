@@ -1,6 +1,7 @@
 const io = require("socket.io-client")
+const constants = require("./constants")
 
-const socket = io.connect("http://localhost:5000",{timeout:10})
+const socket = io.connect(constants.socket,{timeout:10})
 
 module.exports.socket = socket
 

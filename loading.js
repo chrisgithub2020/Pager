@@ -14,19 +14,10 @@ const local_db = fs.readFile(homeDir + "\\.pager\\resources\\user.page", (err, d
     console.log("No account")
     ipc.send("no-account", data)
   } else {
-    fs.readFile(homeDir + "\\.pager\\resources\\emojis.json", "utf-8", (err, data) => {
+    fs.readFile("./emojis.json", "utf-8", (err, data) => {
       if (err) throw err;
       emojis_obj = { "keys": Object.keys(JSON.parse(data)), "object": JSON.parse(data) }
     })
-    // fs.exists(homeDir + "\\.pager\\resources\\emojis.json", (exists) => {
-    //   if (exists) {
-
-    //     fs.readFile(homeDir + "\\.pager\\resources\\emojis.json", "utf-8", (err, data) => {
-    //       if (err) throw err;
-    //       emojis_obj = { "keys": Object.keys(JSON.parse(data)), "object": JSON.parse(data) }
-    //     })
-    //   }
-    // })
 
     ipc.on("db_decrypted", (event, data) => {
       const db_path = homeDir + "\\.pager\\resources\\" + data["active"] + ".page"

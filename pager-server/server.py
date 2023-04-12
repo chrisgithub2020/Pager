@@ -140,7 +140,6 @@ def media_message(sid, msg_data: dict):
     msg_data["path"] = msg_data["mediaURL"]
 
     msg_data["id"] = msg_data["uuid"]
-    msg_data.pop("uuid")
 
     recipient = DB.find(
         filter={"email": msg_data["recipient"]}, table=DB.users_table)
@@ -177,26 +176,27 @@ def media_message(sid, msg_data: dict):
                 json.dump(json_content, file)
         else:
             if msg_data["type"] == "audio":
-                audio_file = File(msg_data["mediaURL"]) # Replace with your audio file
-                if "APIC:" in audio_file.tags:
-                    apic = audio_file.tags["APIC:"].data
-                    image_data = apic
+                if msg_data["albumCover"] != "music.png":
+                    audio_file = File(msg_data["mediaURL"]) # Replace with your audio file
+                    if "APIC:" in audio_file.tags:
+                        apic = audio_file.tags["APIC:"].data
+                        image_data = apic
 
-                    # Open the image using PIL and create a thumbnail
-                    with BytesIO(image_data) as f:
-                        with Image.open(f) as img:
-                            img.thumbnail((100, 100))
-                            thumbnail_data = BytesIO()
-                            img.save(thumbnail_data, format='JPEG')
+                        # Open the image using PIL and create a thumbnail
+                        with BytesIO(image_data) as f:
+                            with Image.open(f) as img:
+                                img.thumbnail((100, 100))
+                                thumbnail_data = BytesIO()
+                                img.save(thumbnail_data, format='JPEG')
 
-                    # Get the Base64-encoded thumbnail data
-                    thumbnail_b64 = base64.b64encode(thumbnail_data.getvalue()).decode()
+                        # Get the Base64-encoded thumbnail data
+                        thumbnail_b64 = base64.b64encode(thumbnail_data.getvalue()).decode()
 
-                    # Print the Base64-encoded thumbnail data
-                    print(thumbnail_b64)
-                    msg_data["albumCover"] = thumbnail_b64
-                else:
-                    print("No album cover found")
+                        # Print the Base64-encoded thumbnail data
+                        print(thumbnail_b64)
+                        msg_data["albumCover"] = thumbnail_b64
+                    else:
+                        print("No album cover found")
             sio.emit(to=recipient["sid"],
                      event="recieve_message", data=msg_data)
 
