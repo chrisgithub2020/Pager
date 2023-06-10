@@ -27,6 +27,7 @@ var remoteStream = null
 var call_ongoing = false
 const callRemoteStreamAudio = document.getElementById("callRemoteStreamAudio")
 let layout = document.getElementById(".")
+var ICE_Candidate = null;
 
 
 //When a user clicks a chat and want to start communicating
@@ -165,7 +166,7 @@ Call.pc.onicecandidate = (event) => {
 }
 
 ipc.on("icecandidate", (event, candidate) => {
-    Call.pc.addIceCandidate(new RTCIceCandidate(candidate))
+    ICE_Candidate = candidate
 })
 
 ipc.on("rtc-offer", async (event, offer) => {
@@ -206,18 +207,20 @@ ipc.on("rtc-offer", async (event, offer) => {
                 })
                 .then(async ()=>{
                     Call.pc.setRemoteDescription(offer["offer"])
+                    Call.pc.addIceCandidate(new RTCIceCandidate(ICE_Candidate))
+                    var answerOptions = null;
                     if (offer["calltype"] === "audio") {
-                        const answerOptions = {
+                        answerOptions = {
                             offerToReceiveAudio: true, // Accept to receive audio from the remote peer
                             offerToReceiveVideo: false // Do not accept to receive video
                           };
                     } else if (offer["calltype"] === "video") {
-                        const answerOptions = {
+                        answerOptions = {
                             offerToReceiveAudio: true, // Accept to receive audio from the remote peer
                             offerToReceiveVideo: true // Do not accept to receive video
                           };
                     }
-                    const answer = await Call.pc.createAnswer()
+                    const answer = await Call.pc.createAnswer(answerOptions)
                     Call.pc.setLocalDescription(answer)
 
                     ipc.send("answer", { "answer": answer, "email": offer["email"],"sid": "gTRy8fTbQP3Vmh5bAAB8"})
@@ -264,6 +267,7 @@ const gallery_div = document.getElementById("gallery-div")
 /// Displaying html
 var contacts_container = document.getElementById("contacts-container")
 var contact_container_for_clique_members_choosing = document.getElementById("contacts-container-for-clique")
+var contact_pic = document.getElementById("contact-pic")
 
 // Showing messages element
 var show_message = ''
@@ -569,6 +573,7 @@ const update_utility_in_runtime = (obj) => {
     }
     document.getElementById(`${contact_name}-contact-card`).addEventListener("click", () => {
         contact_to_perform_action = contact_name
+        contact_pic.src = `data:image/png;base64,${account_db[contact_to_perform_action]["profile_picture"]}`
     })
 }
 
@@ -606,6 +611,7 @@ ipc.on("display_utility_on_startup", async (event, data) => {
                 }
                 document.getElementById(`${contact_name}-contact-card`).addEventListener("click", () => {
                     contact_to_perform_action = contact_name
+                    contact_pic.src = `data:image/png;base64,${account_db[contact_to_perform_action]["profile_picture"]}`
                 })
             }
 
@@ -681,14 +687,23 @@ function start_messaging_from_contacts() {
 
 
             } else {
-                insert_chat_card(contact_to_perform_action)
+                if ("messages" in account_db[contact_to_perform_action]){
+                    insert_chat_card(contact_to_perform_action,account_db[contact_to_perform_action]["messages"][account_db[contact_to_perform_action]["messages"].length - 1])
+                } else {
+                    insert_chat_card(contact_to_perform_action,"")
+        
+                }
                 show_send_message_panel(contact_to_perform_action)
             }
 
         })
     } else {
-        console.log(contact_to_perform_action)
-        insert_chat_card(contact_to_perform_action)
+        if ("messages" in account_db[contact_to_perform_action]){
+            insert_chat_card(contact_to_perform_action,account_db[contact_to_perform_action]["messages"][account_db[contact_to_perform_action]["messages"].length - 1])
+        } else {
+            insert_chat_card(contact_to_perform_action,"")
+
+        }
         show_send_message_panel(contact_to_perform_action)
     }
 
@@ -732,7 +747,7 @@ ipc.on("message", (event, msg) => {
 
             update_utility_in_runtime(db)
             if (!verify_displayed_chat_card_email_list.includes(msg["from"])) {
-                insert_chat_card(db["name"], msg)
+                insert_chat_card(db["name"], msg["message"])
                 verify_displayed_chat_card_email_list.push(msg["from"])
             }
         })
@@ -761,7 +776,7 @@ ipc.on("message", (event, msg) => {
 
                 update_utility_in_runtime(db)
                 if (!verify_displayed_chat_card_email_list.includes(msg["from"])) {
-                    insert_chat_card(db["name"], msg)
+                    insert_chat_card(db["name"], msg["message"])
                     verify_displayed_chat_card_email_list.push(msg["from"])
                 }
             })
@@ -900,7 +915,7 @@ const insert_chat_card = async (card_name, msg) => {
 
     }
     message_hint_element[card_name] = document.createElement("div")
-    message_hint_element[card_name].innerText = msg["message"]
+    message_hint_element[card_name].innerText = msg
     chats_container.insertAdjacentHTML("afterbegin", chat_card)
     verify_displayed_chat_card_email_list.push(account_db[card_name]["email"])
     document.getElementById(card_name + "-card-details").appendChild(message_hint_element[card_name])
@@ -1817,7 +1832,7 @@ const create_clique = () => {
     ipc.on("creation-done", (event, data) => {
         $("#creatCliqueModal").modal("hide")
         $('#create-clique').html('Continue').addClass('enabled');
-        insert_chat_card(clique_obj["name"], "")
+        insert_chat_card(clique_obj["name"], "Clique Created")
     })
 }
 
