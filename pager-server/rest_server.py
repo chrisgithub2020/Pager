@@ -19,6 +19,9 @@ app.add_middleware(
     allow_credentials=True,
 )
 
+@app.get("/")
+def root():
+    return {"message":"hello World"}
 
 @app.post("/register_user")
 def register_user(user_info: Dict[str, str]):

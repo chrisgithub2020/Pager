@@ -13,7 +13,7 @@ const homeDir = os.homedir()
 const { LocalFileData, getFileObjectFromLocalPath } = require("get-file-object-from-local-path");
 const { type } = require("os");
 const { time } = require("console");
-const { eventNames } = require("process");
+const { eventNames, config } = require("process");
 const allow_member_to_send_msg_checkBox = document.getElementById('allow-members-send-message');
 const allow_only_admins_to_send_msg_checkBox = document.getElementById("allow-only-admins-send-message")
 const allow_only_admins_to_change_profile_pic = document.getElementById("allow-only-admins-change-profile-pic")
@@ -43,7 +43,12 @@ const stun_server = {
     ],
     iceCandidatePoolSize: 10,
 }
-var pc = null;
+// var pc = null;
+
+const Config = {
+    HOST_URL:"http://41.155.7.230:8000"
+}
+
 // var message = { "uuid": crypto.randomUUID(), "time": Date(), "type": "txt", "message": document.getElementById("message-area").value, "from": user_obj[user_obj["active"]]["email"], "to": "", "name": panel_name }
 function TextMessage(type = "txt", uuid = crypto.randomUUID(), time = Date(), message, from = user_obj[user_obj["active"]]["email"], to, name) {
     this.uuid = uuid
@@ -73,8 +78,11 @@ const Call = {
     localStream: null,
     remoteStream: null,
     constraint: null,
+    callee_email:null,
 
     start: () => {
+        console.log("Call starting")
+
         if (Call.calltype === "audio") {
             Call.constraint = { "audio": true, "video": false }
         } else if (Call.calltype === "video") {
@@ -100,42 +108,64 @@ const Call = {
                     document.getElementById("remoteStream-video").srcObject = Call.remoteStream
                 }
             })
+            .then(()=>{
+                Call.initiate_connection()
 
-        Call.initiate_connection()
+            })
+
 
     },
 
     initiate_connection: async () => {
+        console.log("Initiating Call")
+        var offerOptions = null;
+        if (Call.calltype == "audio"){
+            offerOptions = {
+                offerToReceiveAudio: true, // Request to receive audio from the remote peer
+                offerToReceiveVideo: false // Do not request to receive video
+            };
+        } else {
+            offerOptions = {
+                offerToReceiveAudio: true, // Request to receive audio from the remote peer
+                offerToReceiveVideo: true // Do not request to receive video
+            };
+        }
+        
 
-        const offer = await pc.createOffer()
+        const offer = await Call.pc.createOffer(offerOptions)
         Call.pc.setLocalDescription(offer)
 
         const offer_obj = {
-            "offer": offer,
-            "email": chat_to_perform_action,
-            "calltype": Call.calltype
+            offer: offer,
+            email: Call.callee_email,
+            calltype: Call.calltype,
+            sid: "gTRy8fTbQP3Vmh5bAAB8"
         }
 
-        ipc.send("send-offer", offer_obj)
+        ipc.send("send-offer", JSON.stringify(offer_obj))
 
-        ipc.on("offer-answer-received", (event, answer) => {
-            Call.pc.setRemoteDescription(answer)
+        ipc.on("rtc-answer", (event, answer) => {
+            Call.pc.setRemoteDescription(answer["answer"])
+
         })
     }
 
 }
 
 Call.pc.onicecandidate = (event) => {
-    const cand_data = {
-        "cand": event.candidate,
-        "email": chat_to_perform_action
+    if (event.candidate){
+        const cand_data = {
+            sid: "gTRy8fTbQP3Vmh5bAAB8",
+            cand: event.candidate,
+            email: Call.callee_email
+        }
+        ipc.send("send-ice-cand", JSON.stringify(cand_data))
     }
-    ipc.send("send-ice-cand", cand_data)
-    console.log("this is the ice candidate ", event.candidate)
+    
 }
 
 ipc.on("icecandidate", (event, candidate) => {
-    Call.pc.addIceCandidate(new RTCIceCandidate(event.candidate))
+    Call.pc.addIceCandidate(new RTCIceCandidate(candidate))
 })
 
 ipc.on("rtc-offer", async (event, offer) => {
@@ -174,12 +204,26 @@ ipc.on("rtc-offer", async (event, offer) => {
                         })
                     }
                 })
-            Call.pc.setRemoteDescription(offer["offer"])
-            const answer = await Call.pc.createAnswer()
-            Call.pc.setLocalDescription(answer)
+                .then(async ()=>{
+                    Call.pc.setRemoteDescription(offer["offer"])
+                    if (offer["calltype"] === "audio") {
+                        const answerOptions = {
+                            offerToReceiveAudio: true, // Accept to receive audio from the remote peer
+                            offerToReceiveVideo: false // Do not accept to receive video
+                          };
+                    } else if (offer["calltype"] === "video") {
+                        const answerOptions = {
+                            offerToReceiveAudio: true, // Accept to receive audio from the remote peer
+                            offerToReceiveVideo: true // Do not accept to receive video
+                          };
+                    }
+                    const answer = await Call.pc.createAnswer()
+                    Call.pc.setLocalDescription(answer)
 
-            ipc.send("answer", { "answer": answer, "email": offer["email"] })
-            call_ongoing = true
+                    ipc.send("answer", { "answer": answer, "email": offer["email"],"sid": "gTRy8fTbQP3Vmh5bAAB8"})
+                    call_ongoing = true
+                })
+            
         } else {
             call_ongoing = false
         }
@@ -643,6 +687,7 @@ function start_messaging_from_contacts() {
 
         })
     } else {
+        console.log(contact_to_perform_action)
         insert_chat_card(contact_to_perform_action)
         show_send_message_panel(contact_to_perform_action)
     }
@@ -791,7 +836,7 @@ ipc.on("message", (event, msg) => {
     }
 
     if (msg["type"] != "txt") {
-        fetch(`https://3a59-102-176-3-170.ngrok-free.app/file/${msg["mediaURL"]}`, {
+        fetch(`${Config.HOST_URL}/file/${msg["mediaURL"]}`, {
             method: 'GET'
         })
             .then(async (response) => {
@@ -965,7 +1010,9 @@ const show_send_message_panel = (panel_name, messages) => {
 
     voice_callBTN = document.getElementById("voice-call")
     voice_callBTN.addEventListener("click", (event) => {
+        event.stopPropagation()
         Call.calltype = "audio"
+        Call.callee_email = account_db[panel_name]["email"]
         Call.start()
     })
 
@@ -974,6 +1021,7 @@ const show_send_message_panel = (panel_name, messages) => {
     video_callBTN.addEventListener("click", (event) => {
 
         Call.calltype = "video"
+        Call.callee_email = account_db[panel_name]["email"]
         Call.start()
     })
 
@@ -1197,7 +1245,7 @@ const show_send_message_panel = (panel_name, messages) => {
 
         // Send a POST request to the server with the file data
 
-        fetch("https://3a59-102-176-3-170.ngrok-free.app/uploadfile", {
+        fetch(`${Config.HOST_URL}/uploadfile`, {
             method: 'POST',
             body: formData
         })
@@ -1269,7 +1317,7 @@ const show_send_message_panel = (panel_name, messages) => {
 
                         // Send a POST request to the server with the file data
 
-                        fetch("https://3a59-102-176-3-170.ngrok-free.app/uploadfile", {
+                        fetch(`${Config.HOST_URL}/uploadfile`, {
                             method: 'POST',
                             body: formData
                         })
@@ -1581,7 +1629,7 @@ const insert_message = async (sender, msg, time, message_type) => {
                                     <span>11:07 PM</span>
                                 </div>
                             </div>`
-        } else if|(sender === "me"){
+        } else if(sender === "me"){
             var msg_html = `<div class="message">
                                 <div class="text-main">
                                     <div class="text-group">

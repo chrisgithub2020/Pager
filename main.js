@@ -24,7 +24,7 @@ const safe_storage = require("electron").safeStorage
 const fs = require("fs")
 const path = require('path')
 const { SocketAddress } = require('net')
-const { electron } = require('process')
+const { electron, off } = require('process')
 var users_db_object = {}
 var active_user_db_object = {}
 let mainWindow = ''
@@ -32,7 +32,7 @@ let mainWindow = ''
 const createWindow = () => {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    width: 1005,
+    width: 1015, //used to be 1005
     height: 700,
     minWidth: 1005,
     // autoHideMenuBar:true,
@@ -511,7 +511,8 @@ ipc.on("send_clique_message", (event, clique_message) => {
 })
 
 ipc.on("send-ice-cand", (event, data) => {
-  socket_functions.send_ice_cand(data)
+  console.log("ice")
+  socket_functions.send_ice_cand(JSON.parse(data))
 
   socket_functions.socket.on("icecandidate", (cand) => {
     event.sender.send("icecandidate", cand)
@@ -519,10 +520,11 @@ ipc.on("send-ice-cand", (event, data) => {
 })
 
 ipc.on("send-offer", (event, offer) => {
-  socket_functions.send_offer(offer)
+  socket_functions.send_offer(JSON.parse(offer))
 
-  socket_functions.socket.on("rtc-offer", (offer) => {
-    event.sender.send("rtc-offer", offer)
+  socket_functions.socket.on("rtc-answer", (offer) => {
+    console.log("Offer answer has come in")
+    event.sender.send("rtc-answer", offer)
   })
 })
 

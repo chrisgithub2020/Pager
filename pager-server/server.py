@@ -14,7 +14,7 @@ users_online = {}
 
 DB = DataBase()
 
-sio = socketio.Server()
+sio = socketio.Server(cors_allowed_origins="*")
 app = socketio.WSGIApp(sio, static_files={
     '/': {'content_type': 'text/html', 'filename': 'index.html'}
 })
@@ -177,7 +177,8 @@ def media_message(sid, msg_data: dict):
         else:
             if msg_data["type"] == "audio":
                 if msg_data["albumCover"] != "music.png":
-                    audio_file = File(msg_data["mediaURL"]) # Replace with your audio file
+                    # Replace with your audio file
+                    audio_file = File(msg_data["mediaURL"])
                     if "APIC:" in audio_file.tags:
                         apic = audio_file.tags["APIC:"].data
                         image_data = apic
@@ -190,7 +191,8 @@ def media_message(sid, msg_data: dict):
                                 img.save(thumbnail_data, format='JPEG')
 
                         # Get the Base64-encoded thumbnail data
-                        thumbnail_b64 = base64.b64encode(thumbnail_data.getvalue()).decode()
+                        thumbnail_b64 = base64.b64encode(
+                            thumbnail_data.getvalue()).decode()
 
                         # Print the Base64-encoded thumbnail data
                         print(thumbnail_b64)
@@ -278,6 +280,17 @@ def disconnect(sid):
 @sio.event
 def send_ice_cand(sid, obj):
     print("INCOMING CALL")
+    print("ICE cand ", obj)
+    callee = DB.find(filter={"email": obj["email"]}, table=DB.users_table)
+    if callee != None:
+        if callee["online_status"] == 1:
+            sio.emit("icecandidate", obj["cand"], obj["sid"])  # callee["sid"])
+
+
+@sio.event
+def _ice_cand(sid, obj):
+    print("INCOMING CALL")
+    print("ICE cand ", obj)
     callee = DB.find(filter={"email": obj["email"]}, table=DB.users_table)
     if callee != None:
         if callee["online_status"] == 1:
@@ -285,29 +298,33 @@ def send_ice_cand(sid, obj):
 
 
 @sio.event
-def send_offer(sid, offer_obj):
-    print(offer_obj)
+def send_offer(sid, offer):
+    offer = dict(offer)
+    print(type(offer))
     callee = DB.find(
-        filter={"email": offer_obj["email"]}, table=DB.users_table)
+        filter={"email": offer["email"]}, table=DB.users_table)
     caller = DB.find(filter={"sid": sid}, table=DB.users_table)
     if callee != None:
         if callee["online_status"] == 1:
+
             offer_obj = {
-                "offer": offer_obj["offer"], "email": caller["email"], "calltype": offer_obj["calltype"]}
-            sio.emit(event="rtc-offer", data=offer_obj, to=callee["sid"])
+                "offer": offer["offer"], "email": caller["email"], "calltype": offer["calltype"]}
+            sio.emit(event="rtc-offer", data=offer_obj,
+                     to=offer["sid"])  # to=callee["sid"])
 
 
 @sio.event
-def send_answer(sid, answer_obj):
-    print(answer_obj)
+def send_answer(sid, answer):
+    print(answer)
     caller = DB.find(
-        filter={"email": answer_obj["email"]}, table=DB.users_table)
-    caller = DB.find(filter={"sid": sid}, table=DB.users_table)
+        filter={"email": answer["email"]}, table=DB.users_table)
+    # callee = DB.find(filter={"sid": sid}, table=DB.users_table)
     if caller != None:
         if caller["online_status"] == 1:
             answer_obj = {
-                "answer": answer_obj["answer"], "email": caller["email"]}
-            sio.emit("rtc-offer", answer_obj, caller["sid"])
+                "answer": answer["answer"], "email": caller["email"]}
+            print(caller["sid"])
+            sio.emit("rtc-answer", answer_obj, caller["sid"])
 
 
 def thread_for_joining_cliques(sid, cliques):
@@ -324,4 +341,4 @@ def join_clique_rooms(sid, clique_list):
 
 
 if __name__ == '__main__':
-    eventlet.wsgi.server(eventlet.listen(('', 5000)), app)
+    eventlet.wsgi.server(eventlet.listen(('', 5555)), app)

@@ -3,6 +3,10 @@ const ipc = electron.ipcRenderer
 const fs = require("fs")
 // const constants = require("./constants")
 
+const Config = {
+    HOST_URL:"http://41.155.7.230:8000"
+}
+
 var signUP_button = document.getElementById("sign-up-button")
 var fields = document.querySelectorAll("#inputEmail, #inputName, #inputPassword")
 var pick_profile_picture = document.getElementById("sign-up-profile-picture-button")
@@ -80,10 +84,10 @@ function submit_form_data() {
         // CHECKING IF ALL REQUIRED FIELDS HAVE BEEN FILLED
     } if (username_verification == true && password_verification == true && email_verification == true) {
         if (form_data["profile_picture"] === ""){
-            convert_image_to_base64("./dist/img/default_profile_pic.jpg")
+            convert_image_to_base64("./src/dist/img/avatars/default_profile_pic.jpg")
         }
         // ipc.send("reg-user", form_data)
-        fetch("https://3a59-102-176-3-170.ngrok-free.app/register_user", {
+        fetch(`${Config.HOST_URL}/register_user`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -137,7 +141,7 @@ function send_verification_code() {
     if (code.length === 7) {
         $('#show-verification-result').html('<span class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span>Loading...').addClass('disabled');
         var verification_details = JSON.stringify({ "email": verified_email, "code": code })
-        fetch("https://3a59-102-176-3-170.ngrok-free.app/verify_code", {
+        fetch(`${Config.HOST_URL}/verify_code`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json'
