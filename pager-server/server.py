@@ -119,7 +119,7 @@ def recieve_message(sid, msg_data):
         else:
             sio.emit(event="recieve_message",
                      data=msg_data, to=recipient["sid"])
-            print("Sending message to this user " + recipient["email"])
+            print("Sending message to this user " + recipient["sid"])
 
 
 @sio.event

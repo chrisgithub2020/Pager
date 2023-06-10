@@ -791,7 +791,7 @@ ipc.on("message", (event, msg) => {
             // Checking whether the message received is from the chat
             if (panel_visibility["panel_name"] === contact_email_and_saved_name[msg["from"]]) {
 
-                if (contact_email_and_saved_name[msg["from"]] in account_db) {
+                if ("messages" in account_db[contact_email_and_saved_name[msg["from"]]]) {
                     msg["read"] = true
 
                     account_db[contact_email_and_saved_name[msg["from"]]]["messages"].push(msg)
@@ -803,6 +803,9 @@ ipc.on("message", (event, msg) => {
                 insert_message("other", msg, "", msg["type"])
 
             } else {
+                if (!verify_displayed_chat_card_email_list.includes(msg["from"])){
+                    insert_chat_card(contact_email_and_saved_name[msg["from"]],msg["message"])
+                }
                 if (msg["from"] in unread_msg) {
                     unread_msg[msg["from"]].push(msg)
                 } else {
@@ -811,7 +814,7 @@ ipc.on("message", (event, msg) => {
                 show_number_of_unread_messages(contact_email_and_saved_name[msg["from"]], unread_msg[msg["from"]].length)
                 update_message_hint_on_chatCard(contact_email_and_saved_name[msg["from"]], msg, message_hint_element)
 
-                if (contact_email_and_saved_name[msg["from"]] in account_db) {
+                if ("messages" in account_db[contact_email_and_saved_name[msg["from"]]]) {
                     msg["read"] = false
 
                     account_db[contact_email_and_saved_name[msg["from"]]]["messages"].push(msg)
@@ -825,6 +828,10 @@ ipc.on("message", (event, msg) => {
             }
         } else {
             console.log("MESSAGE: Going to else")
+            if (!verify_displayed_chat_card_email_list.includes(msg["from"])){
+                console.log("user chat card is not inserted")
+                insert_chat_card(contact_email_and_saved_name[msg["from"]],msg["message"])
+            }
             if (msg["from"] in unread_msg) {
                 unread_msg[msg["from"]].push(msg)
             } else {
@@ -833,12 +840,11 @@ ipc.on("message", (event, msg) => {
             show_number_of_unread_messages(contact_email_and_saved_name[msg["from"]], unread_msg[msg["from"]].length)
             update_message_hint_on_chatCard(contact_email_and_saved_name[msg["from"]], msg, message_hint_element)
 
-            if (contact_email_and_saved_name[msg["from"]] in account_db) {
+            if ("messages" in account_db[contact_email_and_saved_name[msg["from"]]]) {
                 console.log("This contact exists")
                 msg["read"] = false
                 account_db[contact_email_and_saved_name[msg["from"]]]["messages"].push(msg)
                 console.log("this is the message list of the contact", msg)
-
             } else {
                 msg["read"] = false
                 console.log("Contact does not exist", contact_email_and_saved_name[msg["from"]])
