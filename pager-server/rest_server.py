@@ -73,3 +73,17 @@ async def get_file(filename: str):
     file_path = filename  # assuming files are stored in a directory named 'files'
     # Return the file response
     return FileResponse(file_path)
+
+@app.get("/get_emoji")
+async def get_emoji():
+    """
+    THIS FUNCTION SENDS THE EMOJIS TO THE USER WHEN USER REQUESTS FOR IT    
+    """
+    return FileResponse("./resources/emojis.json")
+
+@app.get("/get_default_profile_pic")
+async def get_default_profile_pic():
+    """
+    THIS FUNCTION SENDS THE EMOJIS TO THE USER WHEN USER REQUESTS FOR IT    
+    """
+    return FileResponse("./resources/default_profile_pic.jpg")

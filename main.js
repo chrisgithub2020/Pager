@@ -85,13 +85,16 @@ const createWindow = () => {
   
         socket_functions.socket.on("recieve_message", (message) => {
           console.log(message)
-          ipc.on("save_message", (event, name) => {
+          ipc.on("save_message", (event, name, msg) => {
+            if (msg === null){
+              msg = message
+            }
   
             /// Saving the message
             if ("messages" in active_user_db_object[name]) {
-              active_user_db_object[name]["messages"].push(message)
+              active_user_db_object[name]["messages"].push(msg)
             } else {
-              active_user_db_object[name]["messages"] = [message]
+              active_user_db_object[name]["messages"] = [msg]
             }
             event.sender.send("update_db", active_user_db_object)
             db_to_save = safe_storage.encryptString(JSON.stringify(active_user_db_object))

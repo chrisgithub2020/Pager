@@ -49,6 +49,7 @@ fs.exists(homeDir+"//.pager//resources//media_messages//",(cover_exist)=>{
 })
 
 
+
 module.exports.save_new_user = async (info) => {
     await fs.writeFile(homeDir + "\\.pager\\resources\\user.page", info, (err) => {
         console.log(err)

@@ -639,7 +639,7 @@ ipc.on("display_utility_on_startup", async (event, data) => {
                 if ("messages" in contacts[value]) {
                     if (contacts[value]["messages"].length > 0) {
 
-                        insert_chat_card(value, account_db[value]["messages"][account_db[value]["messages"].length - 1])
+                        insert_chat_card(value, account_db[value]["messages"][account_db[value]["messages"].length - 1]["message"])
                     }
 
                 }
@@ -795,10 +795,13 @@ ipc.on("message", (event, msg) => {
                     msg["read"] = true
 
                     account_db[contact_email_and_saved_name[msg["from"]]]["messages"].push(msg)
+                    console.log(account_db)
 
                 } else {
                     msg["read"] = true
                     account_db[contact_email_and_saved_name[msg["from"]]]["messages"] = [msg]
+                    console.log(account_db)
+
                 }
                 insert_message("other", msg, "", msg["type"])
 
@@ -818,14 +821,18 @@ ipc.on("message", (event, msg) => {
                     msg["read"] = false
 
                     account_db[contact_email_and_saved_name[msg["from"]]]["messages"].push(msg)
+                    console.log(account_db)
 
                 } else {
                     msg["read"] = false
+                    console.log(account_db)
 
                     account_db[contact_email_and_saved_name[msg["from"]]]["messages"] = [msg]
                 }
 
             }
+            ipc.send("save_message",contact_email_and_saved_name[msg["from"]],msg)
+
         } else {
             console.log("MESSAGE: Going to else")
             if (!verify_displayed_chat_card_email_list.includes(msg["from"])){
@@ -844,13 +851,19 @@ ipc.on("message", (event, msg) => {
                 console.log("This contact exists")
                 msg["read"] = false
                 account_db[contact_email_and_saved_name[msg["from"]]]["messages"].push(msg)
+                console.log(account_db)
+
                 console.log("this is the message list of the contact", msg)
             } else {
                 msg["read"] = false
                 console.log("Contact does not exist", contact_email_and_saved_name[msg["from"]])
                 account_db[contact_email_and_saved_name[msg["from"]]]["messages"] = [msg]
+                console.log(account_db)
+
                 console.log("this is the message list of the contact", account_db[contact_email_and_saved_name[msg["from"]]]["messages"])
             }
+            ipc.send("save_message",contact_email_and_saved_name[msg["from"]],msg)
+
 
         }
 
