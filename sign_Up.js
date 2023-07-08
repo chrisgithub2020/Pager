@@ -2,9 +2,12 @@ const electron = require("electron")
 const ipc = electron.ipcRenderer
 const fs = require("fs")
 // const constants = require("./constants")
+const os = require("os")
+const homeDir = os.homedir()
+
 
 const Config = {
-    HOST_URL:"http://41.155.7.230:8000"
+  HOST_URL: `http://41.155.58.53:8000`
 }
 
 var signUP_button = document.getElementById("sign-up-button")
@@ -15,7 +18,9 @@ var verification_code_field = document.getElementById("verification_code_field")
 var form_data = {};
 var verified_email = ""
 var fromData_toSave = {}
-
+// UPDATING PROFILE PICTURE
+// var display_profile_picture = `<img id='sign-up-profile-picture' src="${homeDir + "//.pager//resources//default_profile_pic.jpg"}" alt=''>`
+// profile_picture_div.innerHTML = display_profile_picture
 function submit_form_data() {
     const email_pattern = /^\w+@[a-zA-Z_]+?\.[a-zA-Z]{2,3}$/;
     const username_pattern = /^[a-zA-Z\-]+$/;
@@ -84,7 +89,91 @@ function submit_form_data() {
         // CHECKING IF ALL REQUIRED FIELDS HAVE BEEN FILLED
     } if (username_verification == true && password_verification == true && email_verification == true) {
         if (form_data["profile_picture"] === ""){
-            convert_image_to_base64("./src/dist/img/avatars/default_profile_pic.jpg")
+            fs.exists(homeDir + "//.pager//resources//default_profile_pic.jpg",(image_exist)=>{
+                if (!image_exist){
+                    fs.exists(homeDir + "\\.pager\\resources\\emojis.json", (emojis_exist) => {
+                        if (!emojis_exist) {
+                          console.log("asking for emoji")
+                  
+                          fetch(`${Config.HOST_URL}/get_emoji`, {
+                            method: 'GET',
+                            headers: {
+                              'Content-Type': 'application/json'
+                            }
+                          })
+                            .then(async (response) => {
+                              // Handle the server response
+                              if (response) {
+                                let media_blob = await response.blob()
+                                // Create a FileReader object
+                                const reader = new FileReader();
+                  
+                                // Set up a callback for when the FileReader has loaded the contents of the Blob
+                                reader.onload = (event) => {
+                                  // Access the ArrayBuffer containing the contents of the Blob
+                                  const arrayBuffer = event.target.result;
+                  
+                                  // Create a Buffer object from the ArrayBuffer
+                                  const buffer = Buffer.from(arrayBuffer);
+                  
+                                  // Now you can use the 'buffer' object as needed, e.g. save to disk using fs.writeFile() in Node.js
+                                  // ...
+                                  fs.writeFileSync(homeDir + "//.pager//resources//emojis.json", buffer);
+                  
+                                };
+                  
+                                // Read the contents of the Blob as an ArrayBuffer
+                                reader.readAsArrayBuffer(media_blob);
+                              }
+                            })
+                  
+                        }
+                      })
+                      fs.exists(homeDir + "\\.pager\\resources\\default_profile_pic.jpg", (pic_exist) => {
+                        if (!pic_exist) {
+                          console.log("asking for image")
+                          fetch(`${Config.HOST_URL}/get_default_profile_pic`, {
+                            method: 'GET',
+                            headers: {
+                              'Content-Type': 'application/json'
+                            }
+                          })
+                            .then(async (response) => {
+                              // Handle the server response
+                              if (response) {
+                                let media_blob = await response.blob()
+                                // Create a FileReader object
+                                const reader = new FileReader();
+                  
+                                // Set up a callback for when the FileReader has loaded the contents of the Blob
+                                reader.onload = (event) => {
+                                  // Access the ArrayBuffer containing the contents of the Blob
+                                  const arrayBuffer = event.target.result;
+                  
+                                  // Create a Buffer object from the ArrayBuffer
+                                  const buffer = Buffer.from(arrayBuffer);
+                  
+                                  // Now you can use the 'buffer' object as needed, e.g. save to disk using fs.writeFile() in Node.js
+                                  // ...
+                                  fs.writeFileSync(homeDir + "//.pager//resources//default_profile_pic.jpg", buffer);
+                                  convert_image_to_base64(homeDir + "//.pager//resources//default_profile_pic.jpg")
+
+                  
+                                };
+                  
+                                // Read the contents of the Blob as an ArrayBuffer
+                                reader.readAsArrayBuffer(media_blob);
+                              }
+                            })
+                  
+                        }
+                      })
+                } else {
+                    convert_image_to_base64(homeDir + "//.pager//resources//default_profile_pic.jpg")
+
+                }
+            })
+            // convert_image_to_base64("./default_profile_pic.jpg")
         }
         // ipc.send("reg-user", form_data)
         fetch(`${Config.HOST_URL}/register_user`, {

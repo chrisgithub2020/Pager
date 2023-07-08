@@ -47,7 +47,7 @@ const stun_server = {
 // var pc = null;
 
 const Config = {
-    HOST_URL:"http://41.155.7.230:8000"
+  HOST_URL: `http://41.155.58.53:8000`
 }
 
 // var message = { "uuid": crypto.randomUUID(), "time": Date(), "type": "txt", "message": document.getElementById("message-area").value, "from": user_obj[user_obj["active"]]["email"], "to": "", "name": panel_name }

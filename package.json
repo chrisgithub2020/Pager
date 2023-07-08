@@ -3,16 +3,7 @@
   "version": "1.0.0",
   "description": "A fast a secure messaging app",
   "main": "main.js",
-  "extraFiles": [
-    {
-      "source":"./src/dist/img/music.png",
-      "dest": "./music.png"
-    },
-    {
-      "source":"./emojis.json",
-      "dest":"./emojis.json"
-    }
-  ],
+  
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "electron .",
