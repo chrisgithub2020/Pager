@@ -1,7 +1,6 @@
 const io = require("socket.io-client")
 
-const socket = io.connect("ws://41.155.58.53:5555",{timeout:10})
-
+const socket = io.connect("ws://192.168.100.39:5555",{timeout:10})
 module.exports.socket = socket
 
 module.exports.connect_to_server = async () => {

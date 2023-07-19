@@ -59,6 +59,20 @@ def verify_user_registration_code(info: Dict[str, str]):
 
     return verification_result
 
+@app.patch("/verify_contact")
+def verify_contact(info: Dict[str, str]):
+    """
+    Checks if contacts exists when adding a contact
+    """
+    contact = ''
+    post = DB.find(filter={"email": info["email"]}, table=DB.users_table)
+
+    if post != None:
+        contact = Utils.encode(post)
+    
+    return contact
+
+
 @app.post("/uploadfile")
 async def create_upload_file(file: UploadFile = File(...)):
     file_extension = file.filename.split(".")[1]

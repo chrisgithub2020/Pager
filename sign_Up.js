@@ -7,7 +7,7 @@ const homeDir = os.homedir()
 
 
 const Config = {
-  HOST_URL: `http://41.155.58.53:8000`
+  HOST_URL: `http://41.155.43.109:8000`
 }
 
 var signUP_button = document.getElementById("sign-up-button")

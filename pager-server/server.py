@@ -284,7 +284,7 @@ def send_ice_cand(sid, obj):
     callee = DB.find(filter={"email": obj["email"]}, table=DB.users_table)
     if callee != None:
         if callee["online_status"] == 1:
-            sio.emit("icecandidate", obj["cand"], obj["sid"])  # callee["sid"])
+            sio.emit("icecandidate", obj["cand"], callee["sid"])  # callee["sid"])
 
 
 @sio.event
@@ -310,7 +310,7 @@ def send_offer(sid, offer):
             offer_obj = {
                 "offer": offer["offer"], "email": caller["email"], "calltype": offer["calltype"]}
             sio.emit(event="rtc-offer", data=offer_obj,
-                     to=offer["sid"])  # to=callee["sid"])
+                     to=callee["sid"])  # to=callee["sid"])
 
 
 @sio.event
@@ -341,4 +341,4 @@ def join_clique_rooms(sid, clique_list):
 
 
 if __name__ == '__main__':
-    eventlet.wsgi.server(eventlet.listen(('', 5555)), app)
+    eventlet.wsgi.server(eventlet.listen(("192.168.100.39", 5555)), app)

@@ -13,7 +13,7 @@ const homeDir = os.homedir()
 const { LocalFileData, getFileObjectFromLocalPath } = require("get-file-object-from-local-path");
 const { type } = require("os");
 const { time } = require("console");
-const { eventNames, config } = require("process");
+const { eventNames, config, off } = require("process");
 const allow_member_to_send_msg_checkBox = document.getElementById('allow-members-send-message');
 const allow_only_admins_to_send_msg_checkBox = document.getElementById("allow-only-admins-send-message")
 const allow_only_admins_to_change_profile_pic = document.getElementById("allow-only-admins-change-profile-pic")
@@ -156,7 +156,6 @@ const Call = {
 Call.pc.onicecandidate = (event) => {
     if (event.candidate){
         const cand_data = {
-            sid: "gTRy8fTbQP3Vmh5bAAB8",
             cand: event.candidate,
             email: Call.callee_email
         }
@@ -165,11 +164,23 @@ Call.pc.onicecandidate = (event) => {
     
 }
 
+const handleIceCand = ()=>{
+    switch (Call.pc.iceGatheringState){
+        case "new":
+            break;
+        case "complete":
+            break;
+        case "gathering":
+            break;
+    }
+}
+
 ipc.on("icecandidate", (event, candidate) => {
     ICE_Candidate = candidate
 })
 
 ipc.on("rtc-offer", async (event, offer) => {
+    console.log(offer)
     if (panel_visibility != true) {
 
         show_send_message_panel(contact_email_and_saved_name[offer["email"]])
@@ -207,7 +218,12 @@ ipc.on("rtc-offer", async (event, offer) => {
                 })
                 .then(async ()=>{
                     Call.pc.setRemoteDescription(offer["offer"])
-                    Call.pc.addIceCandidate(new RTCIceCandidate(ICE_Candidate))
+                    const iceInterval = setInterval(()=>{
+                        if (ICE_Candidate != null){
+                            Call.pc.addIceCandidate(new RTCIceCandidate(ICE_Candidate))
+                            clearInterval(iceInterval)
+                        }
+                    },400)
                     var answerOptions = null;
                     if (offer["calltype"] === "audio") {
                         answerOptions = {

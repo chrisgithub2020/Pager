@@ -12,7 +12,6 @@ const os = require("os")
 const homeDir = os.homedir()
 
 
-
 // Custom modules
 var socket_functions = null
 
@@ -23,7 +22,6 @@ const use_media_devices = require("./use_media")
 const safe_storage = require("electron").safeStorage
 const fs = require("fs")
 const path = require('path')
-const { SocketAddress } = require('net')
 const { electron, off } = require('process')
 var users_db_object = {}
 var active_user_db_object = {}
@@ -79,8 +77,8 @@ const createWindow = () => {
 
         console.log("Connecting to server now!")
         socket_functions = require("./socket_io")
-        socket_functions.connect_to_server()
         // Sending request to change online status
+        console.log(users_db_object)
         socket_functions.change_online_status(users_db_object)
   
         socket_functions.socket.on("recieve_message", (message) => {
@@ -119,6 +117,10 @@ const createWindow = () => {
         socket_functions.socket.on("server_saved_messages", (messages) => {
           console.log(messages)
         })
+        socket_functions.socket.on("rtc-offer",(offer)=>{
+          console.log(offer);
+          event.sender.send("rtc-offer",offer)
+        })
     
         
       }
@@ -136,9 +138,9 @@ const createWindow = () => {
         event.sender.send("display_utility_on_startup", { "db": active_user_db_object, "emoji": emojis_html })
 
         /// ! Recieving calls
-        socket_functions.socket.on("incoming_call", (call_id) => {
-          event.sender.send("incoming_call", call_id)
-        })
+        // socket_functions.socket.on("incoming_call", (call_id) => {
+        //   event.sender.send("incoming_call", call_id)
+        // })
 
 
       }
@@ -400,6 +402,7 @@ ipc.on("verify_contact", (event, contact_details) => {
     }
   })
 })
+
 ipc.on("save_contact", async (event, contact_data) => {
   const contact = JSON.parse(contact_data)
 
@@ -521,6 +524,7 @@ ipc.on("send-ice-cand", (event, data) => {
     event.sender.send("icecandidate", cand)
   })
 })
+
 
 ipc.on("send-offer", (event, offer) => {
   socket_functions.send_offer(JSON.parse(offer))
