@@ -8,7 +8,7 @@ var emojis_obj = {}
 var direction = ''
 
 const Config = {
-  HOST_URL: `http://41.155.43.109:8000`
+  HOST_URL: `http://localhost:8000`
 }
 //Loading screen
 const local_db = fs.readFile(homeDir + "\\.pager\\resources\\user.page", (err, data) => {

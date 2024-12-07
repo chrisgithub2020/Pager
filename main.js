@@ -138,9 +138,9 @@ const createWindow = () => {
         event.sender.send("display_utility_on_startup", { "db": active_user_db_object, "emoji": emojis_html })
 
         /// ! Recieving calls
-        // socket_functions.socket.on("incoming_call", (call_id) => {
-        //   event.sender.send("incoming_call", call_id)
-        // })
+        socket_functions.socket.on("incomingCall",(call_data)=>{
+          event.sender.send("startAudioCall",call_data)
+        })
 
 
       }
@@ -535,6 +535,26 @@ ipc.on("send-offer", (event, offer) => {
   })
 })
 
+
+
 ipc.on("answer", (event, answer) => {
   socket_functions.send_answer(answer)
 })
+
+ipc.on("start_audioCall",(event, audioCall) => {
+  socket_functions.start_audioCall(audioCall)
+
+  socket_functions.socket.on("audioCallStarted",(call_room)=>{
+    event.sender.send("continue_with_audioCall",call_room)
+  })
+})
+
+
+
+// ipc.on("voice_call_audio_data",(event, voice_call_data)=>{
+//   voice_call_data = json.parse(voice_call_data)
+
+//   socket_functions.socket.on("recieve_call_data",(data)=>{
+//     event.sender.send("recieve_call_data",data);
+//   })
+// })

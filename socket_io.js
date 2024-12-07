@@ -1,6 +1,6 @@
 const io = require("socket.io-client")
 
-const socket = io.connect("ws://192.168.100.39:5555",{timeout:10})
+const socket = io.connect("http://127.0.0.1:5555",{timeout:10})
 module.exports.socket = socket
 
 module.exports.connect_to_server = async () => {
@@ -71,4 +71,12 @@ module.exports.ready_to_receive_saved_messages = async (code)=>{
 
 module.exports.enter_clique_rooms = async (list)=>{
     socket.emit("join_clique_rooms",list)
+}
+
+module.exports.start_audioCall = async (l)=>{
+    socket.emit("start_audio_call",l)
+}
+
+module.exports.voice_call_data = async (call_data)=>{
+    socket.emit("voice_call_data",call_data)
 }

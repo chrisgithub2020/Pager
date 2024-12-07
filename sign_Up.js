@@ -7,7 +7,7 @@ const homeDir = os.homedir()
 
 
 const Config = {
-  HOST_URL: `http://41.155.43.109:8000`
+  HOST_URL: `http://localhost:8000`
 }
 
 var signUP_button = document.getElementById("sign-up-button")
@@ -71,8 +71,8 @@ function submit_form_data() {
             form_data["password"] = password
             password_verification = true
         }
-        form_data["computer"] = 1
-        form_data["mobile_phone"] = 0
+        form_data["computer"] = "1"
+        form_data["mobile_phone"] = "0"
     });
 
     if (!Object.keys(form_data).includes("profile_picture")) {
@@ -176,6 +176,7 @@ function submit_form_data() {
             // convert_image_to_base64("./default_profile_pic.jpg")
         }
         // ipc.send("reg-user", form_data)
+        console.log(form_data)
         fetch(`${Config.HOST_URL}/register_user`, {
             method: 'POST',
             headers: {

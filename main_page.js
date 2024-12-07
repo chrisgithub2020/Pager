@@ -3,11 +3,10 @@ const DesktopCapture = require("electron").desktopCapturer
 const crypto = require("crypto");
 const { desktopCapturer } = require("electron");
 const fs = require("fs");
-const axios = require("axios")
 // const constants = require("./constants.js")
 const path = require("path")
 const http = require("http")
-const media_tags = require("jsmediatags")
+const {Peer} = require("peerjs")
 const os = require("os")
 const homeDir = os.homedir()
 const { LocalFileData, getFileObjectFromLocalPath } = require("get-file-object-from-local-path");
@@ -35,19 +34,28 @@ let chat_to_perform_action = null
 var no_contact = false
 
 
+// const PeerJs = new Peer()
+
+
+
 // Calling
 const stun_server = {
     iceServers: [
         {
             urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302']
         },
+        {
+            url: 'turn:turn.anyfirewall.com:443?transport=tcp',
+            credential: 'webrtc',
+            username: 'webrtc'
+        }
     ],
     iceCandidatePoolSize: 10,
 }
 // var pc = null;
 
 const Config = {
-  HOST_URL: `http://41.155.58.53:8000`
+  HOST_URL: `http://localhost:8000`
 }
 
 // var message = { "uuid": crypto.randomUUID(), "time": Date(), "type": "txt", "message": document.getElementById("message-area").value, "from": user_obj[user_obj["active"]]["email"], "to": "", "name": panel_name }
@@ -153,6 +161,10 @@ const Call = {
 
 }
 
+Call.pc.addEventListener("iceconnectionstatechange",()=>{
+    console.log(Call.pc.iceConnectionState)
+})
+
 Call.pc.onicecandidate = (event) => {
     if (event.candidate){
         const cand_data = {
@@ -179,7 +191,12 @@ ipc.on("icecandidate", (event, candidate) => {
     ICE_Candidate = candidate
 })
 
-ipc.on("rtc-offer", async (event, offer) => {
+// ipc.on("recieve_call_data",(event,data) => {
+//     let blob = new Blob([data], {type: "audio/webm"})
+//     callRemoteStreamAudio.src = createObjectURL(blob)
+// })
+
+ipc.on("startAudioCall", async (event, offer) => {
     console.log(offer)
     if (panel_visibility != true) {
 
@@ -191,9 +208,9 @@ ipc.on("rtc-offer", async (event, offer) => {
     $("#call").show()
 
     let constraint = null
-    if (offer["calltype"] === "audio") {
+    if (offer["call_type"] === "audio") {
         constraint = { "audio": true, "video": false }
-    } else if (offer["calltype"] === "video") {
+    } else if (offer["call_type"] === "video") {
         constraint = { "audio": true, "video": true }
     }
     document.getElementById("answer-end-call").addEventListener("click", async (event) => {
@@ -201,50 +218,24 @@ ipc.on("rtc-offer", async (event, offer) => {
 
             return navigator.mediaDevices.getUserMedia(constraint)
                 .then((stream) => {
-                    Call.localStream = stream
-                    Call.remoteStream = new MediaStream()
 
-                    Call.localStream.getTracks().forEach((track) => {
-                        Call.pc.addTrack(track, Call.localStream)
-                    })
+                    voice_call_media = new MediaRecorder(stream);
+                    voice_call_media.start();
 
-                    Call.pc.ontrack = (event) => {
-                        event.streams[0].getTracks().forEach((track) => {
-                            Call.remoteStream.addTrack(track)
-                            callRemoteStreamAudio.srcObject = Call.remoteStream
-                            callRemoteStreamAudio.play()
-                        })
+                    voice_call_media.onstart = (event) => {
+                        call_ongoing = true;
                     }
-                })
-                .then(async ()=>{
-                    Call.pc.setRemoteDescription(offer["offer"])
-                    const iceInterval = setInterval(()=>{
-                        if (ICE_Candidate != null){
-                            Call.pc.addIceCandidate(new RTCIceCandidate(ICE_Candidate))
-                            clearInterval(iceInterval)
-                        }
-                    },400)
-                    var answerOptions = null;
-                    if (offer["calltype"] === "audio") {
-                        answerOptions = {
-                            offerToReceiveAudio: true, // Accept to receive audio from the remote peer
-                            offerToReceiveVideo: false // Do not accept to receive video
-                          };
-                    } else if (offer["calltype"] === "video") {
-                        answerOptions = {
-                            offerToReceiveAudio: true, // Accept to receive audio from the remote peer
-                            offerToReceiveVideo: true // Do not accept to receive video
-                          };
-                    }
-                    const answer = await Call.pc.createAnswer(answerOptions)
-                    Call.pc.setLocalDescription(answer)
 
-                    ipc.send("answer", { "answer": answer, "email": offer["email"],"sid": "gTRy8fTbQP3Vmh5bAAB8"})
-                    call_ongoing = true
+                    voice_call_media.ondataavailable = (event) => {
+                        ipc.send("voice_call_audio_data", JSON.stringify({"call_room":offer["call_room"], "data":event.data}))
+                    }
+
+                    
                 })
             
         } else {
             call_ongoing = false
+            voice_call_media.stop()
         }
 
     })
@@ -252,6 +243,7 @@ ipc.on("rtc-offer", async (event, offer) => {
 
 var recording_audio = false
 var voice_callBTN
+let voice_call_media
 var video_callBTN
 
 var incomingCall;
@@ -283,7 +275,7 @@ const gallery_div = document.getElementById("gallery-div")
 /// Displaying html
 var contacts_container = document.getElementById("contacts-container")
 var contact_container_for_clique_members_choosing = document.getElementById("contacts-container-for-clique")
-var contact_pic = document.getElementById("contact-pic")
+var settings_profile_photo = document.getElementsByClassName("settings-profile-photo")
 
 // Showing messages element
 var show_message = ''
@@ -538,6 +530,7 @@ verify_contact_button.addEventListener("click", get_values)
 // * Uses the user info to display information about the user
 ipc.on("user_info", (event, user_db) => {
     user_obj = user_db
+    console.log("user_info")
 
     const profile_pic = document.getElementById("profile_photo")
     const username = document.getElementById("username")
@@ -546,6 +539,15 @@ ipc.on("user_info", (event, user_db) => {
 
         profile_pic.src = `data:image/png;base64,${user_db[user_db["active"]]["profile_pic"]}`
         settings_profile_picture.src = `data:image/png;base64,${user_db[user_db["active"]]["profile_pic"]}`
+        Array.from(settings_profile_photo).forEach((val,ind,arr)=>{
+            val.src = `data:image/png;base64,${user_db[user_db["active"]]["profile_pic"]}`
+        })
+    } else {
+        profile_pic.src = homeDir + "//.pager//resources//default_profile_pic.jpg";
+        settings_profile_picture.src = homeDir + "//.pager//resources//default_profile_pic.jpg"
+        Array.from(settings_profile_photo).forEach((val,ind,arr)=>{
+            val.src = homeDir + "//.pager//resources//default_profile_pic.jpg"
+        })
     }
     username.innerText = user_db[user_db["active"]]["name"]
     document.getElementById("show-accounts-on-sidenav").innerText = user_db[user_db["active"]]["name"]
@@ -554,8 +556,14 @@ ipc.on("user_info", (event, user_db) => {
 
     db_keys.forEach((value, index, array) => {
         if (value != "active") {
+            let pic
+            if (user_db[value]["profile_pic"] === ""){
+                pic = homeDir + "//.pager//resources//default_profile_pic.jpg"
+            } else {
+                pic = `data:image/png;base64,${user_db[value]["profile_pic"]}`
+            }
             var html_snippet = `<a style="border-top: 1px solid #1f2a35; text-align:left;" class="btn other-accounts" id="${user_db[value]["name"]}-acc-options">
-                                    <span><img src="data:image/png;base64,${user_db[value]["profile_pic"]}" alt="" id="log-account-pic"></span>
+                                    <span><img src="${pic}" alt="" id="log-account-pic"></span>
                                     ${user_db[value]["name"]}
                                 </a>`
             accounts_card_collapsible.insertAdjacentHTML("afterbegin", html_snippet)
@@ -570,10 +578,17 @@ ipc.on("user_info", (event, user_db) => {
 })
 
 const update_utility_in_runtime = (obj) => {
-    console.log(obj)
+    let image_path
     var path_to_img = obj["profile_picture"]
     var contact_name = obj["user_saving_name"]
-    var image_path = `data:image/png;base64,${path_to_img}`
+
+    if (path_to_img === ""){
+        console.log("homedir")
+        image_path = homeDir + "//.pager//resources//default_profile_pic.jpg"
+    } else {
+        image_path = `data:image/png;base64,${path_to_img}`
+    }
+    
     var contact_card = `<a class='active-account contacts-avatar padding-y-7px' id="${contact_name}-contact-card" data-toggle="tab" href="#contactInfo">
                             <img src="${image_path}" alt="" class='settings-profile-photo' id="base64image">
                             <div id='active-account-name-and-status'>
@@ -612,7 +627,13 @@ ipc.on("display_utility_on_startup", async (event, data) => {
             if (contacts[value]["type"] === "contact") {
                 var path_to_img = contacts[value]["profile_picture"]
                 var contact_name = value
-                var image_path = `data:image/png;base64,${path_to_img}`
+                let image_path
+                if (path_to_img === ""){
+                    console.log("homedir")
+                    image_path = homeDir + "//.pager//resources//default_profile_pic.jpg"
+                } else {
+                    image_path = `data:image/png;base64,${path_to_img}`
+                }
                 var contact_card = `<a class='active-account contacts-avatar padding-y-7px' id="${contact_name}-contact-card" data-toggle="tab" href="#contactInfo">
                                         <img src="${image_path}" alt="" class='settings-profile-photo' id="base64image">
                                         <div id='active-account-name-and-status'>
@@ -924,6 +945,12 @@ ipc.on("message", (event, msg) => {
 
 
 const insert_chat_card = async (card_name, msg) => {
+    let image_path
+    if (account_db[card_name]["profile_picture"] === "") {
+        image_path = homeDir + "//.pager//resources//default_profile_pic.jpg"
+    } else {
+        image_path = `data:image/png;base64,${account_db[card_name]["profile_picture"]}`
+    }
     if (card_name === "unknown") {
         var chat_card = `<a href="#list-chat" class="filterDiscussions all unread single" id="${card_name}" data-toggle="list" role="tab">
                             <img class="avatar-md" src="" data-toggle="tooltip" data-placement="top" title="Mildred" alt="avatar">
@@ -938,7 +965,7 @@ const insert_chat_card = async (card_name, msg) => {
     } else {
 
         var chat_card = `<a href="#list-chat" class="filterDiscussions all unread single" id="${card_name}" data-toggle="list" role="tab">
-                            <img class="avatar-md" src="data:image/png;base64,${account_db[card_name]["profile_picture"]}" data-toggle="tooltip" data-placement="top" title="Mildred" alt="avatar">
+                            <img class="avatar-md" src="${image_path}" data-toggle="tooltip" data-placement="top" title="Mildred" alt="avatar">
                             <div class="new" id="${card_name}-unread-messages">
                             </div>
                             <div class="data" id="${card_name}-card-details">
@@ -964,12 +991,18 @@ const insert_chat_card = async (card_name, msg) => {
 
 
 const show_send_message_panel = (panel_name, messages) => {
+    let image_path
+    if (account_db[panel_name]["profile_picture"] === "") {
+        image_path = homeDir + "//.pager//resources//default_profile_pic.jpg"
+    } else {
+        image_path = `data:image/png;base64,${account_db[card_name]["profile_picture"]}`
+    }
     var panel_html = `<div class="chat" id="chat">
                     <div class="top">
                         <div class="container">
                             <div class="col-md-12">
                                 <div class="inside chat-name">
-                                    <a href="#"><img class="avatar-md" src="data:image/png;base64,${account_db[panel_name]["profile_picture"]}" data-toggle="tooltip" data-placement="top" title="Keith" alt="avatar"></a>
+                                    <a href="#"><img class="avatar-md" src="${image_path}" data-toggle="tooltip" data-placement="top" title="Keith" alt="avatar"></a>
                                     <div class="data" id="chat-info">
                                         <h5>${panel_name}</h5>
                                         <span>Active now</span>
@@ -1060,19 +1093,25 @@ const show_send_message_panel = (panel_name, messages) => {
 
     voice_callBTN = document.getElementById("voice-call")
     voice_callBTN.addEventListener("click", (event) => {
+        ipc.send("start_audioCall",account_db[panel_name]["email"])
         event.stopPropagation()
         Call.calltype = "audio"
         Call.callee_email = account_db[panel_name]["email"]
         Call.start()
+        
     })
 
 
     video_callBTN = document.getElementById("video-call")
     video_callBTN.addEventListener("click", (event) => {
 
-        Call.calltype = "video"
-        Call.callee_email = account_db[panel_name]["email"]
-        Call.start()
+        // Call.calltype = "video"
+        // Call.callee_email = account_db[panel_name]["email"]
+        // Call.start()
+
+        ipc.send("start_videoCall", (event) => {
+
+        })
     })
 
 

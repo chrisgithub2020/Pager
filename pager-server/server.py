@@ -2,6 +2,7 @@ import eventlet
 import socketio
 import os
 import json
+import uuid
 from utils import Utils
 from database import DataBase
 from datetime import datetime
@@ -339,6 +340,23 @@ def join_clique_rooms(sid, clique_list):
                     args=(sid, clique_list), daemon=True)
     thread.start()
 
+@sio.event
+def start_audio_call(sid, callee):
+    room_name = str(uuid.uuid4())
+    callee = DB.find(filter={"email": callee}, table=DB.users_table)
+    caller = DB.find(filter={"sid":sid}, table=DB.users_table)
+    if callee["online_status"] == 1:
+        sio.emit("incomingCall",{"call_type":"audio","caller":caller["email"],"call_room":room_name},callee["sid"])
+        sio.enter_room(sid=sid,room=room_name)
+        sio.enter_room(sid=callee["sid"],room=room_name)
+        sio.emit("audioCallStarted",room_name, sid)
+    else:
+        sio.emit("callee_offline",False,sid)
+
+@sio.event
+def voice_call_data(sid,call_data):
+    sio.emit(event="recieve_call_data",room_name=call_data["call_room"])
+
 
 if __name__ == '__main__':
-    eventlet.wsgi.server(eventlet.listen(("192.168.100.39", 5555)), app)
+    eventlet.wsgi.server(eventlet.listen(("localhost", 5555)), app)
