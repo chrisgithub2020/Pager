@@ -1,6 +1,6 @@
 const io = require("socket.io-client")
-// https://pager-server-xsyc.onrender.com
-const socket = io.connect("http://193.168.34.34:8080",{timeout:10, transports:["websocket"]})
+
+const socket = io.connect("http://127.0.0.1:9000",{timeout:10})
 module.exports.socket = socket
 
 module.exports.connect_to_server = async () => {
