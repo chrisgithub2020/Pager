@@ -6,7 +6,7 @@ const fs = require("fs");
 // const constants = require("./constants.js")
 const path = require("path")
 const http = require("http")
-const {Peer} = require("peerjs")
+// const {Peer} = require("peerjs")
 const os = require("os")
 const homeDir = os.homedir()
 const { LocalFileData, getFileObjectFromLocalPath } = require("get-file-object-from-local-path");
@@ -55,7 +55,7 @@ const stun_server = {
 // var pc = null;
 
 const Config = {
-  HOST_URL: `http://localhost:8000`
+  HOST_URL: `https://9978-41-215-173-26.ngrok-free.app`
 }
 
 // var message = { "uuid": crypto.randomUUID(), "time": Date(), "type": "txt", "message": document.getElementById("message-area").value, "from": user_obj[user_obj["active"]]["email"], "to": "", "name": panel_name }
