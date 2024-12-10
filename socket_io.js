@@ -1,11 +1,7 @@
 const io = require("socket.io-client")
 
-<<<<<<< HEAD
 const socket = io("http://192.168.243.53:9000",{transports: ["polling","websocket"], upgrade:true, reconnection: true})
 // socket.connect()
-=======
-const socket = io.connect("http://0.0.0.0:9000",{timeout:10})
->>>>>>> 0922e188c5f4bd7491460f6f752b1c732b464b36
 module.exports.socket = socket
 
 module.exports.connect_to_server = async () => {
