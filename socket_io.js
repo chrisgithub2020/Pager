@@ -1,6 +1,7 @@
 const io = require("socket.io-client")
 
-const socket = io.connect("http://127.0.0.1:9000",{timeout:10})
+const socket = io("http://192.168.79.53:9000",{transports: ["polling","websocket"], upgrade:true, reconnection: true})
+// socket.connect()
 module.exports.socket = socket
 
 module.exports.connect_to_server = async () => {

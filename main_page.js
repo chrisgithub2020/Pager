@@ -189,6 +189,7 @@ const handleIceCand = ()=>{
 
 ipc.on("icecandidate", (event, candidate) => {
     ICE_Candidate = candidate
+    console.log("ice recieved")
 })
 
 // ipc.on("recieve_call_data",(event,data) => {
@@ -991,11 +992,12 @@ const insert_chat_card = async (card_name, msg) => {
 
 
 const show_send_message_panel = (panel_name, messages) => {
+    console.log(account_db[panel_name])
     let image_path
     if (account_db[panel_name]["profile_picture"] === "") {
         image_path = homeDir + "//.pager//resources//default_profile_pic.jpg"
     } else {
-        image_path = `data:image/png;base64,${account_db[card_name]["profile_picture"]}`
+        image_path = `data:image/png;base64,${account_db[panel_name]["profile_picture"]}`
     }
     var panel_html = `<div class="chat" id="chat">
                     <div class="top">
