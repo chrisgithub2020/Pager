@@ -8,7 +8,7 @@ var emojis_obj = {}
 var direction = ''
 
 const Config = {
-  HOST_URL: `https://9978-41-215-173-26.ngrok-free.app`
+  HOST_URL: `https://9c08-154-161-146-6.ngrok-free.app`
 }
 //Loading screen
 const local_db = fs.readFile(homeDir + "\\.pager\\resources\\user.page", (err, data) => {

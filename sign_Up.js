@@ -7,7 +7,7 @@ const homeDir = os.homedir()
 
 
 const Config = {
-  HOST_URL: `http://192.168.8.100:8000`
+  HOST_URL: `https://9c08-154-161-146-6.ngrok-free.app`
 }
 
 var signUP_button = document.getElementById("sign-up-button")
