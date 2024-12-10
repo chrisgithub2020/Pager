@@ -155,6 +155,7 @@ const Call = {
 
         ipc.on("rtc-answer", (event, answer) => {
             Call.pc.setRemoteDescription(answer["answer"])
+            Call.pc.addIceCandidate(new RTCIceCandidate(ICE_Candidate))
         })
     }
 
@@ -171,6 +172,7 @@ ipc.on("rtc-offer",async (event, offer)=>{
     document.getElementById("answer-end-call").addEventListener("click", async (event) => {
         if (!call_ongoing){
             Call.pc.setRemoteDescription(offer["offer"])
+            Call.pc.addIceCandidate(new RTCIceCandidate(ICE_Candidate))
             let answer = await Call.pc.createAnswer()
             Call.pc.setLocalDescription(answer)
             let ans = {
@@ -215,8 +217,7 @@ const handleIceCand = ()=>{
 
 ipc.on("icecandidate", (event, candidate) => {
     ICE_Candidate = candidate
-    console.log("ice recieved")
-    Call.pc.addIceCandidate(candidate)
+    console.log("ice recieved", candidate)
 })
 
 // ipc.on("recieve_call_data",(event,data) => {
