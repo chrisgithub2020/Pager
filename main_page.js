@@ -204,7 +204,7 @@ Call.pc.onicecandidate = (event) => {
 const handleIceCand = ()=>{
     switch (Call.pc.iceGatheringState){
         case "new":
-            break;
+            console.log("new");
         case "complete":
             break;
         case "gathering":
@@ -212,10 +212,11 @@ const handleIceCand = ()=>{
     }
 }
 
+
 ipc.on("icecandidate", (event, candidate) => {
     ICE_Candidate = candidate
     console.log("ice recieved")
-    // Call.pc.addIceCandidate(candidate)
+    Call.pc.addIceCandidate(candidate)
 })
 
 // ipc.on("recieve_call_data",(event,data) => {
