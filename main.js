@@ -118,8 +118,12 @@ const createWindow = () => {
           console.log(messages)
         })
         socket_functions.socket.on("rtc-offer",(offer)=>{
-          console.log(offer);
+          console.log(offer, "our call beginning");
           event.sender.send("rtc-offer",offer)
+        })
+        socket_functions.socket.on("icecandidate", (cand) => {
+          console.log(cand)
+          event.sender.send("icecandidate", cand)
         })
     
         
@@ -520,9 +524,6 @@ ipc.on("send-ice-cand", (event, data) => {
   console.log("ice")
   socket_functions.send_ice_cand(JSON.parse(data))
 
-  socket_functions.socket.on("icecandidate", (cand) => {
-    event.sender.send("icecandidate", cand)
-  })
 })
 
 

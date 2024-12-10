@@ -155,11 +155,36 @@ const Call = {
 
         ipc.on("rtc-answer", (event, answer) => {
             Call.pc.setRemoteDescription(answer["answer"])
-
         })
     }
 
 }
+
+ipc.on("rtc-offer",async (event, offer)=>{
+    if (panel_visibility != true) {
+        show_send_message_panel(contact_email_and_saved_name[offer["email"]])
+    }
+
+
+    $("#chat").hide()
+    $("#call").show()
+    document.getElementById("answer-end-call").addEventListener("click", async (event) => {
+        if (!call_ongoing){
+            Call.pc.setRemoteDescription(offer["offer"])
+            let answer = await Call.pc.createAnswer()
+            Call.pc.setLocalDescription(answer)
+            let ans = {
+                sdp: answer.sdp,
+                type: answer.type
+            }
+            let sendAnswer = {answer: ans, email: offer["email"]}
+            ipc.send("answer", sendAnswer)
+        } else {
+            Call.pc.close()
+            call_ongoing == false
+        }
+    })
+})
 
 Call.pc.addEventListener("iceconnectionstatechange",()=>{
     console.log(Call.pc.iceConnectionState)
@@ -190,6 +215,7 @@ const handleIceCand = ()=>{
 ipc.on("icecandidate", (event, candidate) => {
     ICE_Candidate = candidate
     console.log("ice recieved")
+    // Call.pc.addIceCandidate(candidate)
 })
 
 // ipc.on("recieve_call_data",(event,data) => {
@@ -197,50 +223,48 @@ ipc.on("icecandidate", (event, candidate) => {
 //     callRemoteStreamAudio.src = createObjectURL(blob)
 // })
 
-ipc.on("startAudioCall", async (event, offer) => {
-    console.log(offer)
-    if (panel_visibility != true) {
-
-        show_send_message_panel(contact_email_and_saved_name[offer["email"]])
-    }
+// ipc.on("startAudioCall", async (event, offer) => {
+//     if (panel_visibility != true) {
+//         show_send_message_panel(contact_email_and_saved_name[offer["caller"]])
+//     }
 
 
-    $("#chat").hide()
-    $("#call").show()
+//     $("#chat").hide()
+//     $("#call").show()
 
-    let constraint = null
-    if (offer["call_type"] === "audio") {
-        constraint = { "audio": true, "video": false }
-    } else if (offer["call_type"] === "video") {
-        constraint = { "audio": true, "video": true }
-    }
-    document.getElementById("answer-end-call").addEventListener("click", async (event) => {
-        if (call_ongoing === false) {
+//     let constraint = null
+//     if (offer["call_type"] === "audio") {
+//         constraint = { "audio": true, "video": false }
+//     } else if (offer["call_type"] === "video") {
+//         constraint = { "audio": true, "video": true }
+//     }
+//     document.getElementById("answer-end-call").addEventListener("click", async (event) => {
+//         if (call_ongoing === false) {
 
-            return navigator.mediaDevices.getUserMedia(constraint)
-                .then((stream) => {
+//             return navigator.mediaDevices.getUserMedia(constraint)
+//                 .then((stream) => {
 
-                    voice_call_media = new MediaRecorder(stream);
-                    voice_call_media.start();
+//                     voice_call_media = new MediaRecorder(stream);
+//                     voice_call_media.start();
 
-                    voice_call_media.onstart = (event) => {
-                        call_ongoing = true;
-                    }
+//                     voice_call_media.onstart = (event) => {
+//                         call_ongoing = true;
+//                     }
 
-                    voice_call_media.ondataavailable = (event) => {
-                        ipc.send("voice_call_audio_data", JSON.stringify({"call_room":offer["call_room"], "data":event.data}))
-                    }
+//                     voice_call_media.ondataavailable = (event) => {
+//                         ipc.send("voice_call_audio_data", JSON.stringify({"call_room":offer["call_room"], "data":event.data}))
+//                     }
 
                     
-                })
+//                 })
             
-        } else {
-            call_ongoing = false
-            voice_call_media.stop()
-        }
+//         } else {
+//             call_ongoing = false
+//             voice_call_media.stop()
+//         }
 
-    })
-})
+//     })
+// })
 
 var recording_audio = false
 var voice_callBTN
@@ -948,7 +972,6 @@ ipc.on("message", (event, msg) => {
 
 
 const insert_chat_card = async (card_name, msg) => {
-    console.log(user_obj)
     let image_path
     if (account_db[card_name]["profile_picture"] === "") {
         image_path = homeDir + "//.pager//resources//default_profile_pic.jpg"
@@ -995,7 +1018,7 @@ const insert_chat_card = async (card_name, msg) => {
 
 
 const show_send_message_panel = (panel_name, messages) => {
-    console.log(account_db[panel_name])
+    console.log("call panel name", panel_name, contact_email_and_saved_name)
     let image_path
     if (account_db[panel_name]["profile_picture"] === "") {
         image_path = homeDir + "//.pager//resources//default_profile_pic.jpg"
