@@ -1,6 +1,7 @@
 import eventlet
 import socketio
 import os
+import logging
 import json
 import uuid
 from utils import Utils
@@ -12,12 +13,12 @@ from threading import Thread
 from io import BytesIO
 from PIL import Image
 users_online = {}
-eventlet.monkey_patch()
+
+logging.basicConfig(level=logging.DEBUG)
+
 
 DB = DataBase()
-# , async_mode='gevent', logger=True, engineio_logger=True
-sio = socketio.Server(async_mode="eventlet",cors_allowed_origins="*",allowed_upgrades=["websocket"])
-# sio = socketio.AsyncServer()
+sio = socketio.Server(async_mode="eventlet",cors_allowed_origins="*",allowed_upgrades=["websocket"], ping_timeout=4, ping_interval=10)
 app = socketio.WSGIApp(sio, static_files={
     '/': {'content_type': 'text/html', 'filename': 'index.html'}
 })
@@ -27,6 +28,11 @@ app = socketio.WSGIApp(sio, static_files={
 @sio.event
 def connect(sid, environ):
     print('connect ', sid)
+    transport = environ.get("HTTP_UPGRADE", "polling")
+    if transport == "websocket":
+        print(f"Client {sid} connected using WebSocket")
+    else:
+        print(f"Client {sid} connected using long polling")
 
 
 @sio.event
@@ -118,7 +124,7 @@ def recieve_message(sid, msg_data):
                 json_content = {msg_data["from"]: message_to_save}
 
                 # Saving messages
-                with open(file=f"./saved-messages/{recipient['email']}.json", mode="w") as file:
+                with open(f".\saved-messages\{recipient['email']}.json", mode="w") as file:
                     json.dump(json_content, file)
         else:
             sio.emit(event="recieve_message",

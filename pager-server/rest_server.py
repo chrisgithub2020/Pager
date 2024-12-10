@@ -41,6 +41,15 @@ def register_user(user_info: Dict[str, str]):
     # SEND VERIFICATION CODE THROUGH EMAIL
     return post
 
+@app.post("/signIN")
+def signIn(info: Dict[str, str]):
+    print(info)
+    post = DB.find(filter={"email": info["email"]},table=DB.users_table)
+    if post:
+        print("exist")
+        post = Utils.encode(post)
+        return post
+
 
 @app.patch("/verify_code")
 def verify_user_registration_code(info: Dict[str, str]):

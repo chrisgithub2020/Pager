@@ -617,6 +617,8 @@ ipc.on("added_to_clique", (event, clique_data) => {
 /// Adds the contact card (html)
 /// Also add chat card
 ipc.on("display_utility_on_startup", async (event, data) => {
+    console.log(account_db)
+
     contacts = data["db"]
     account_db = contacts
     emoji_container.lastChild.innerHTML = data['emoji']
@@ -946,6 +948,7 @@ ipc.on("message", (event, msg) => {
 
 
 const insert_chat_card = async (card_name, msg) => {
+    console.log(user_obj)
     let image_path
     if (account_db[card_name]["profile_picture"] === "") {
         image_path = homeDir + "//.pager//resources//default_profile_pic.jpg"
