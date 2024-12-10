@@ -196,9 +196,7 @@ Call.pc.onicecandidate = (event) => {
             cand: event.candidate,
             email: Call.callee_email
         }
-        if (Call.pc.iceGatheringState === "complete"){
-            ipc.send("send-ice-cand", JSON.stringify(cand_data))
-        }
+        ipc.send("send-ice-cand", JSON.stringify(cand_data))
     }
     
 }

@@ -453,7 +453,6 @@ ipc.on("send_text_message", (event, message) => {
   db_to_save = safe_storage.encryptString(JSON.stringify(active_user_db_object))
   local_db_io.save_contact(users_db_object["active"], db_to_save)
 
-
 })
 
 
