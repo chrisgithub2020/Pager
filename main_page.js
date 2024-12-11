@@ -14,6 +14,7 @@ const allow_member_to_send_msg_checkBox = document.getElementById('allow-members
 const allow_only_admins_to_send_msg_checkBox = document.getElementById("allow-only-admins-send-message")
 const allow_only_admins_to_change_profile_pic = document.getElementById("allow-only-admins-change-profile-pic")
 const allow_members_to_change_profile_pic = document.getElementById("allow-members-change-profile-pic")
+const audio_for_call_element = document.getElementById("callRemoteStreamAudio")
 let send_audio_message_play_pause = null;
 let audio_playing = false;
 let clique_list = []; // List of all cliques in db
@@ -164,6 +165,7 @@ ipc.on("rtc-offer",async (event, offer)=>{
         show_send_message_panel(contact_email_and_saved_name[offer["email"]])
     }
     Call.callee_email = offer["email"]
+    Call.calltype = offer.calltype
 
 
     $("#chat").hide()
@@ -193,25 +195,29 @@ ipc.on("rtc-offer",async (event, offer)=>{
             .then((stream) => {
                 Call.localStream = stream
                 Call.remoteStream = new MediaStream()
+                
+                stream.getTracks().forEach((track) => {
+                    Call.pc.addTrack(track, stream)
+                })
+                
+                
                 if (offer.calltype === "video") {
                     document.getElementById("localStream-video").srcObject = Call.localStream
-                } else {
                     document.getElementById("remoteStream-video").srcObject = Call.remoteStream
-
+                } else {
                 }
 
-                Call.localStream.getTracks().forEach((track) => {
-                    Call.pc.addTrack(track, Call.localStream)
-                })
-
-                Call.pc.ontrack = (event) => {
-                    event.streams[0].getTracks().forEach((track) => {
-                        Call.remoteStream.addTrack(track)
-                    })
-                }
             })
     })
 })
+Call.pc.ontrack = (event) => {
+    if (Call.calltype === "audio"){
+        audio_for_call_element.srcObject = event.streams[0]
+    }
+    // event.streams[0].getTracks().forEach((track) => {
+    //     Call.remoteStream.addTrack(track)
+    // })
+}
 
 Call.pc.addEventListener("iceconnectionstatechange",()=>{
     console.log(Call.pc.iceConnectionState)
