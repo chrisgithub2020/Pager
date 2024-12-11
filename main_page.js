@@ -150,9 +150,9 @@ const Call = {
 
         ipc.on("rtc-answer", (event, answer) => {
             Call.pc.setRemoteDescription(answer["answer"])
-            Call.pc.addIceCandidate(new RTCIceCandidate(ICE_Candidate), () =>{}, (error, answer) => {
+            if (ICE_Candidate){
                 Call.pc.addIceCandidate(new RTCIceCandidate(ICE_Candidate))
-            })
+            }
         })
     }
 
@@ -244,6 +244,9 @@ const handleIceCand = ()=>{
 ipc.on("icecandidate", (event, candidate) => {
     ICE_Candidate = candidate
     console.log("ice recieved", candidate)
+    if (Call.pc.remoteDescription){
+        Call.pc.addIceCandidate(candidate)
+    }
 })
 
 // ipc.on("recieve_call_data",(event,data) => {
