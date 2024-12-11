@@ -10,9 +10,6 @@ const os = require("os")
 // const {Config} = require("./config.js")
 const homeDir = os.homedir()
 const { LocalFileData, getFileObjectFromLocalPath } = require("get-file-object-from-local-path");
-const { type } = require("os");
-const { time } = require("console");
-const { eventNames, config, off } = require("process");
 const allow_member_to_send_msg_checkBox = document.getElementById('allow-members-send-message');
 const allow_only_admins_to_send_msg_checkBox = document.getElementById("allow-only-admins-send-message")
 const allow_only_admins_to_change_profile_pic = document.getElementById("allow-only-admins-change-profile-pic")
@@ -165,6 +162,7 @@ ipc.on("rtc-offer",async (event, offer)=>{
     if (panel_visibility != true) {
         show_send_message_panel(contact_email_and_saved_name[offer["email"]])
     }
+    Call.callee_email = offer["email"]
 
 
     $("#chat").hide()
@@ -198,6 +196,7 @@ Call.pc.onicecandidate = (event) => {
             cand: event.candidate,
             email: Call.callee_email
         }
+        console.log("my ice is ready", cand_data.email)
         ipc.send("send-ice-cand", JSON.stringify(cand_data))
     }
     
