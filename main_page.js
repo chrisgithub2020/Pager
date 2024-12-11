@@ -101,8 +101,9 @@ const Call = {
 
                 }
 
-                Call.localStream.getTracks().forEach((track) => {
-                    Call.pc.addTrack(track, Call.localStream)
+                stream.getTracks().forEach((track) => {
+                    console.log("hiiii", track)
+                    Call.pc.addTrack(track, stream)
                 })
 
                 Call.pc.ontrack = (event) => {
