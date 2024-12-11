@@ -35,20 +35,18 @@ var no_contact = false
 
 
 
+
 // Calling
 const stun_server = {
-    iceServers: [
-        {
-            urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302']
-        },
-        {
-            url: 'turn:turn.anyfirewall.com:443?transport=tcp',
-            credential: 'webrtc',
-            username: 'webrtc'
-        }
-    ],
     iceCandidatePoolSize: 10,
 }
+
+const setServer = async () => {
+    const response = await fetch('https://pager-turn.metered.live/api/v1/turn/credentials?apiKey=dd6b2d9cb3ce9160addbf47f9017e320e1ed');
+    const iceServers = await response.json();
+    stun_server.iceServers = iceServers;
+};
+setServer()
 // var pc = null;
 
 const Config = {
