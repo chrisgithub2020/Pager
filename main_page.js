@@ -192,22 +192,24 @@ ipc.on("rtc-offer",async (event, offer)=>{
             .then((stream) => {
                 Call.localStream = stream
                 Call.remoteStream = new MediaStream()
-                if (offer.calltype === "video") {
-                    document.getElementById("localStream-video").srcObject = Call.localStream
-                } else {
-                    document.getElementById("remoteStream-video").srcObject = Call.remoteStream
-
-                }
-
+                
                 Call.localStream.getTracks().forEach((track) => {
                     Call.pc.addTrack(track, Call.localStream)
+                    console.log(track)
                 })
-
+                
                 Call.pc.ontrack = (event) => {
                     event.streams[0].getTracks().forEach((track) => {
                         Call.remoteStream.addTrack(track)
                     })
                 }
+                if (offer.calltype === "video") {
+                    document.getElementById("localStream-video").srcObject = Call.localStream
+                    document.getElementById("remoteStream-video").srcObject = Call.remoteStream
+                } else {
+                    document.getElementById("callRemoteStreamAudio").srcObject = Call.remoteStream
+                }
+
             })
     })
 })
