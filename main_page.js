@@ -150,7 +150,9 @@ const Call = {
 
         ipc.on("rtc-answer", (event, answer) => {
             Call.pc.setRemoteDescription(answer["answer"])
-            Call.pc.addIceCandidate(new RTCIceCandidate(ICE_Candidate))
+            Call.pc.addIceCandidate(new RTCIceCandidate(ICE_Candidate), () =>{}, (error, answer) => {
+                Call.pc.addIceCandidate(new RTCIceCandidate(ICE_Candidate))
+            })
         })
     }
 
