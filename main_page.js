@@ -165,6 +165,11 @@ ipc.on("rtc-offer",async (event, offer)=>{
 
     $("#chat").hide()
     $("#call").show()
+    if (offer.calltype === "audio") {
+        Call.constraint = { "audio": true, "video": false }
+    } else if (offer.calltype === "video") {
+        Call.constraint = { "audio": true, "video": true }
+    }
     document.getElementById("answer-end-call").addEventListener("click", async (event) => {
         if (!call_ongoing){
             Call.pc.setRemoteDescription(offer["offer"])
@@ -181,6 +186,27 @@ ipc.on("rtc-offer",async (event, offer)=>{
             Call.pc.close()
             call_ongoing == false
         }
+        return navigator.mediaDevices.getUserMedia(Call.constraint)
+            .then((stream) => {
+                Call.localStream = stream
+                Call.remoteStream = new MediaStream()
+                if (offer.calltype === "video") {
+                    document.getElementById("localStream-video").srcObject = Call.localStream
+                } else {
+                    document.getElementById("remoteStream-video").srcObject = Call.remoteStream
+
+                }
+
+                Call.localStream.getTracks().forEach((track) => {
+                    Call.pc.addTrack(track, Call.localStream)
+                })
+
+                Call.pc.ontrack = (event) => {
+                    event.streams[0].getTracks().forEach((track) => {
+                        Call.remoteStream.addTrack(track)
+                    })
+                }
+            })
     })
 })
 
@@ -194,7 +220,6 @@ Call.pc.onicecandidate = (event) => {
             cand: event.candidate,
             email: Call.callee_email
         }
-        console.log("my ice is ready", cand_data.email)
         ipc.send("send-ice-cand", JSON.stringify(cand_data))
     }
     
