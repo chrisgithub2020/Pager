@@ -22,7 +22,6 @@ const go_back_btns = document.getElementsByClassName("go-back")
 var localStream = null
 var remoteStream = null
 var call_ongoing = false
-const callRemoteStreamAudio = document.getElementById("callRemoteStreamAudio")
 let layout = document.getElementById(".")
 var ICE_Candidate = null;
 
@@ -102,16 +101,17 @@ const Call = {
 
                 }
 
-                Call.localStream.getTracks().forEach((track) => {
-                    Call.pc.addTrack(track, Call.localStream)
+                stream.getTracks().forEach((track) => {
+                    Call.pc.addTrack(track, stream)
                 })
 
                 Call.pc.ontrack = (event) => {
-                    event.streams[0].getTracks().forEach((track) => {
-                        Call.remoteStream.addTrack(track)
-                    })
-                    document.getElementById("remoteStream-video").srcObject = Call.remoteStream
+                    console.log("caller", event)
+                    if (Call.calltype === "audio"){
+                        audio_for_call_element.srcObject = event.streams[0]
+                    }
                 }
+
             })
             .then(()=>{
                 Call.initiate_connection()
@@ -174,8 +174,21 @@ ipc.on("rtc-offer",async (event, offer)=>{
     } else if (offer.calltype === "video") {
         Call.constraint = { "audio": true, "video": true }
     }
-    document.getElementById("answer-end-call").addEventListener("click", async (event) => {
-        if (!call_ongoing){
+    document.getElementById("answer-end-call").addEventListener("click", (event) => {
+        
+        return navigator.mediaDevices.getUserMedia(Call.constraint)
+            .then((stream) => {
+                Call.localStream = stream
+                Call.remoteStream = new MediaStream()
+                
+                stream.getTracks().forEach((track) => {
+                    Call.pc.addTrack(track, stream)
+                })
+
+         
+            })
+            .then(async ()=>{
+                if (!call_ongoing){
             Call.pc.setRemoteDescription(offer["offer"])
             Call.pc.addIceCandidate(new RTCIceCandidate(ICE_Candidate))
             let answer = await Call.pc.createAnswer()
@@ -190,32 +203,15 @@ ipc.on("rtc-offer",async (event, offer)=>{
             Call.pc.close()
             call_ongoing == false
         }
-        return navigator.mediaDevices.getUserMedia(Call.constraint)
-            .then((stream) => {
-                Call.localStream = stream
-                Call.remoteStream = new MediaStream()
-                
-                stream.getTracks().forEach((track) => {
-                    Call.pc.addTrack(track, stream)
-                })
-                
-                
-                if (offer.calltype === "video") {
-                    document.getElementById("localStream-video").srcObject = Call.localStream
-                    document.getElementById("remoteStream-video").srcObject = Call.remoteStream
-                } else {
-                }
-
             })
     })
 })
+
 Call.pc.ontrack = (event) => {
+    console.log("caller", event)
     if (Call.calltype === "audio"){
         audio_for_call_element.srcObject = event.streams[0]
     }
-    // event.streams[0].getTracks().forEach((track) => {
-    //     Call.remoteStream.addTrack(track)
-    // })
 }
 
 Call.pc.addEventListener("iceconnectionstatechange",()=>{
