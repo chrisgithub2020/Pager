@@ -22,7 +22,6 @@ const go_back_btns = document.getElementsByClassName("go-back")
 var localStream = null
 var remoteStream = null
 var call_ongoing = false
-const callRemoteStreamAudio = document.getElementById("callRemoteStreamAudio")
 let layout = document.getElementById(".")
 var ICE_Candidate = null;
 
@@ -97,22 +96,11 @@ const Call = {
             .then((stream) => {
                 Call.localStream = stream
                 Call.remoteStream = new MediaStream()
-                if (Call.calltype === "video") {
-                    document.getElementById("localStream-video").srcObject = Call.localStream
-
-                }
 
                 stream.getTracks().forEach((track) => {
-                    console.log("hiiii", track)
                     Call.pc.addTrack(track, stream)
                 })
 
-                Call.pc.ontrack = (event) => {
-                    event.streams[0].getTracks().forEach((track) => {
-                        Call.remoteStream.addTrack(track)
-                    })
-                    document.getElementById("remoteStream-video").srcObject = Call.remoteStream
-                }
             })
             .then(()=>{
                 Call.initiate_connection()
@@ -136,7 +124,7 @@ const Call = {
                 offerToReceiveVideo: true // Do not request to receive video
             };
         }
-        
+        console.log(offerOptions, "my offer");
 
         const offer = await Call.pc.createOffer(offerOptions)
         Call.pc.setLocalDescription(offer)
@@ -199,13 +187,7 @@ ipc.on("rtc-offer",async (event, offer)=>{
                 stream.getTracks().forEach((track) => {
                     Call.pc.addTrack(track, stream)
                 })
-                
-                
-                if (offer.calltype === "video") {
-                    document.getElementById("localStream-video").srcObject = Call.localStream
-                    document.getElementById("remoteStream-video").srcObject = Call.remoteStream
-                } else {
-                }
+             
 
             })
     })
@@ -214,9 +196,6 @@ Call.pc.ontrack = (event) => {
     if (Call.calltype === "audio"){
         audio_for_call_element.srcObject = event.streams[0]
     }
-    // event.streams[0].getTracks().forEach((track) => {
-    //     Call.remoteStream.addTrack(track)
-    // })
 }
 
 Call.pc.addEventListener("iceconnectionstatechange",()=>{
