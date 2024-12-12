@@ -96,15 +96,17 @@ const Call = {
             .then((stream) => {
                 Call.localStream = stream
                 Call.remoteStream = new MediaStream()
-                if (Call.calltype === "video") {
-                    document.getElementById("localStream-video").srcObject = Call.localStream
 
+<<<<<<< HEAD
                 }
 
+=======
+>>>>>>> 27289ae783f66a52c967791cdfc3b14429c5d2a2
                 stream.getTracks().forEach((track) => {
                     Call.pc.addTrack(track, stream)
                 })
 
+<<<<<<< HEAD
                 Call.pc.ontrack = (event) => {
                     console.log("caller", event)
                     if (Call.calltype === "audio"){
@@ -112,6 +114,8 @@ const Call = {
                     }
                 }
 
+=======
+>>>>>>> 27289ae783f66a52c967791cdfc3b14429c5d2a2
             })
             .then(()=>{
                 Call.initiate_connection()
@@ -135,7 +139,7 @@ const Call = {
                 offerToReceiveVideo: true // Do not request to receive video
             };
         }
-        
+        console.log(offerOptions, "my offer");
 
         const offer = await Call.pc.createOffer(offerOptions)
         Call.pc.setLocalDescription(offer)
@@ -203,6 +207,19 @@ ipc.on("rtc-offer",async (event, offer)=>{
             Call.pc.close()
             call_ongoing == false
         }
+<<<<<<< HEAD
+=======
+        return navigator.mediaDevices.getUserMedia(Call.constraint)
+            .then((stream) => {
+                Call.localStream = stream
+                Call.remoteStream = new MediaStream()
+                
+                stream.getTracks().forEach((track) => {
+                    Call.pc.addTrack(track, stream)
+                })
+             
+
+>>>>>>> 27289ae783f66a52c967791cdfc3b14429c5d2a2
             })
     })
 })
