@@ -145,7 +145,7 @@ const Call = {
             $("#call").hide();
           } else if (event.data === "im done") {
             dataChannel.send("ok");
-            document.getElementByIsd("localStream-video").srcObject = null;
+            document.getElementById("localStream-video").srcObject = null;
             document.getElementById("remoteStream-video").srcObject = null;
             stream.getTracks().forEach((track) => {
               track.stop();
