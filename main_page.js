@@ -36,7 +36,6 @@ var call_ongoing = false;
 let layout = document.getElementById(".");
 var ICE_Candidate = null;
 
-
 //When a user clicks a chat and want to start communicating
 let chat_to_perform_action = null;
 var no_contact = false;
@@ -104,7 +103,9 @@ function MediaMessage(
 }
 
 const Call = {
-  pc: new RTCPeerConnection(stun_server, {optional: [{RtpDataChannells:true}]}),
+  pc: new RTCPeerConnection(stun_server, {
+    optional: [{ RtpDataChannells: true }],
+  }),
   calltype: null,
   localStream: null,
   remoteStream: null,
@@ -125,34 +126,34 @@ const Call = {
         Call.localStream = stream;
         Call.remoteStream = new MediaStream();
 
-        if (Call.calltype === "video"){
-          document.getElementById("localStream-video").srcObject = stream
+        if (Call.calltype === "video") {
+          document.getElementById("localStream-video").srcObject = stream;
         }
 
         stream.getTracks().forEach((track) => {
           Call.pc.addTrack(track, stream);
         });
 
-        dataChannel.onmessage = (event)=>{
-          if (event.data === "ok"){
-            console.log(event.data)
-            stream.getTracks().forEach((track)=>{
-              track.stop()
-            }) 
-            dataChannel.close()
-            Call.pc.close()
+        dataChannel.onmessage = (event) => {
+          if (event.data === "ok") {
+            console.log(event.data);
+            stream.getTracks().forEach((track) => {
+              track.stop();
+            });
+            dataChannel.close();
+            Call.pc.close();
             $("#call").hide();
-          } else if (event.data === "im done"){
-            dataChannel.send("ok")
-            document.getElementByIsd("localStream-video").srcObject = null
-            document.getElementById("remoteStream-video").srcObject = null
-            stream.getTracks().forEach((track)=>{
-              track.stop()
-            }) 
-            dataChannel.close()
+          } else if (event.data === "im done") {
+            dataChannel.send("ok");
+            document.getElementByIsd("localStream-video").srcObject = null;
+            document.getElementById("remoteStream-video").srcObject = null;
+            stream.getTracks().forEach((track) => {
+              track.stop();
+            });
+            dataChannel.close();
             $("#call").hide();
           }
-        }
+        };
       })
       .then(() => {
         Call.initiate_connection();
@@ -194,22 +195,23 @@ const Call = {
         Call.pc.addIceCandidate(new RTCIceCandidate(ICE_Candidate));
       }
     });
-    document.getElementById("answer-end-call").addEventListener("click", (event, answer) => {
-      if (call_ongoing){
-        document.getElementById("localStream-video").srcObject = null
-        document.getElementById("remoteStream-video").srcObject = null
-        dataChannel.send("im done")
-        console.log("done sending")
-      }
-    })
-
+    document
+      .getElementById("answer-end-call")
+      .addEventListener("click", (event, answer) => {
+        if (call_ongoing) {
+          document.getElementById("localStream-video").srcObject = null;
+          document.getElementById("remoteStream-video").srcObject = null;
+          dataChannel.send("im done");
+          console.log("done sending");
+        }
+      });
   },
 };
 
-const dataChannel = Call.pc.createDataChannel("endChannel", {negotiated: true, id: 0});
-
-
-
+const dataChannel = Call.pc.createDataChannel("endChannel", {
+  negotiated: true,
+  id: 0,
+});
 
 ipc.on("rtc-offer", async (event, offer) => {
   if (panel_visibility != true) {
@@ -217,8 +219,8 @@ ipc.on("rtc-offer", async (event, offer) => {
   }
   Call.callee_email = offer["email"];
   Call.calltype = offer.calltype;
-  const answer_end_call_button = document.getElementById("answer-end-call")
-  answer_end_call_button.style.background = "#6fbf79"
+  const answer_end_call_button = document.getElementById("answer-end-call");
+  answer_end_call_button.style.background = "#6fbf79";
 
   $("#chat").hide();
   $("#call").show();
@@ -227,65 +229,64 @@ ipc.on("rtc-offer", async (event, offer) => {
   } else if (offer.calltype === "video") {
     Call.constraint = { audio: true, video: true };
   }
-  
-  answer_end_call_button
-    .addEventListener("click", (event) => {
+
+  answer_end_call_button.addEventListener("click", (event) => {
+    if (!call_ongoing) {
       return navigator.mediaDevices
         .getUserMedia(Call.constraint)
         .then((stream) => {
           Call.localStream = stream;
           Call.remoteStream = new MediaStream();
 
-          if (Call.calltype === "video"){
-            document.getElementById("localStream-video").srcObject = stream
+          if (Call.calltype === "video") {
+            document.getElementById("localStream-video").srcObject = stream;
           }
 
           stream.getTracks().forEach((track) => {
             Call.pc.addTrack(track, stream);
           });
 
-          dataChannel.onmessage = (event)=>{
-            if (event.data === "im done"){
-              dataChannel.send("ok")
-              document.getElementById("localStream-video").srcObject = null
-              document.getElementById("remoteStream-video").srcObject = null
-              stream.getTracks().forEach((track)=>{
-                track.stop()
-              }) 
-              dataChannel.close()
-              $("#call").hide();            
-            } else if (event.data === "ok"){
-              console.log(event.data)
-              stream.getTracks().forEach((track)=>{
-                track.stop()
-              }) 
-              dataChannel.close()
-              Call.pc.close()
+          dataChannel.onmessage = (event) => {
+            if (event.data === "im done") {
+              dataChannel.send("ok");
+              document.getElementById("localStream-video").srcObject = null;
+              document.getElementById("remoteStream-video").srcObject = null;
+              stream.getTracks().forEach((track) => {
+                track.stop();
+              });
+              dataChannel.close();
+              $("#call").hide();
+            } else if (event.data === "ok") {
+              console.log(event.data);
+              stream.getTracks().forEach((track) => {
+                track.stop();
+              });
+              dataChannel.close();
+              Call.pc.close();
               $("#call").hide();
             }
-          }
+          };
         })
         .then(async () => {
-          if (!call_ongoing) {
-            call_ongoing = true
-            Call.pc.setRemoteDescription(offer["offer"]);
-            Call.pc.addIceCandidate(new RTCIceCandidate(ICE_Candidate));
-            let answer = await Call.pc.createAnswer();
-            Call.pc.setLocalDescription(answer);
-            let ans = {
-              sdp: answer.sdp,
-              type: answer.type,
-            };
-            let sendAnswer = { answer: ans, email: offer["email"] };
-            ipc.send("answer", sendAnswer);
-            answer_end_call_button.style.background = "#e05b5d"
-          } else {
-            document.getElementById("localStream-video").srcObject = null
-            document.getElementById("remoteStream-video").srcObject = null
-            dataChannel.send("im done")
-          }
+          call_ongoing = true;
+          Call.pc.setRemoteDescription(offer["offer"]);
+          Call.pc.addIceCandidate(new RTCIceCandidate(ICE_Candidate));
+          let answer = await Call.pc.createAnswer();
+          Call.pc.setLocalDescription(answer);
+          let ans = {
+            sdp: answer.sdp,
+            type: answer.type,
+          };
+          let sendAnswer = { answer: ans, email: offer["email"] };
+          ipc.send("answer", sendAnswer);
+          answer_end_call_button.style.background = "#e05b5d";
         });
-    });
+    } else {
+      document.getElementById("localStream-video").srcObject = null;
+      document.getElementById("remoteStream-video").srcObject = null;
+      dataChannel.send("im done");
+    }
+  });
 });
 
 Call.pc.ontrack = (event) => {
@@ -293,14 +294,13 @@ Call.pc.ontrack = (event) => {
   if (Call.calltype === "audio") {
     audio_for_call_element.srcObject = event.streams[0];
   } else {
-    document.getElementById("remoteStream-video").srcObject = event.streams[0]
+    document.getElementById("remoteStream-video").srcObject = event.streams[0];
   }
 };
 
 Call.pc.addEventListener("iceconnectionstatechange", () => {
   console.log(Call.pc.iceConnectionState);
 });
-
 
 Call.pc.onicecandidate = (event) => {
   if (event.candidate) {
@@ -1261,10 +1261,9 @@ const show_send_message_panel = (panel_name, messages) => {
 
   video_callBTN = document.getElementById("video-call");
   video_callBTN.addEventListener("click", (event) => {
-    Call.calltype = "video"
-    Call.callee_email = account_db[panel_name]["email"]
-    Call.start()
-
+    Call.calltype = "video";
+    Call.callee_email = account_db[panel_name]["email"];
+    Call.start();
   });
 
   $("#contactsModal").modal("hide");
@@ -1328,7 +1327,7 @@ const show_send_message_panel = (panel_name, messages) => {
   document
     .getElementById("insert_emoji")
     .addEventListener("mouseout", (event) => {
-      console.log(event.clientX)
+      console.log(event.clientX);
       emoji_container.style.transform = "scale(0)";
       emoji_container.style.transition = "transition 300ms ease-in-out";
     });
