@@ -755,3 +755,30 @@ img#chat-profile-photo {
   padding-left: 10%;
   padding-right: 10%;
 }
+
+video#remoteStream-video {
+  z-index: -100;
+  position: absolute;
+  top: 0;
+  left: 0;
+  min-width: 100%;
+  min-height: 100%;
+}
+
+/* video#localStream-video {
+  top: 61%;
+  position: relative;
+  left: 60%;
+  width: 350px;
+  height: 250px;
+} */
+
+#call-connecting {
+  padding-bottom: 30px;
+}
+
+/* #call-inside {
+  margin-top: 350px;
+} */
+
+#localStream-video { position: absolute; height: 250px; width: 350px; } /* Default position */ #localStream-video { bottom: 5px; right: 5px; } /* Position for screens wider than 600px */ @media (min-width: 600px) { #localStream-video { bottom: 10px; right: 10px; } } /* Position for screens wider than 900px */ @media (min-width: 900px) { #localStream-video { bottom: 15px; right: 15px; } }

@@ -1916,7 +1916,6 @@ input:checked+.slider:before {
 }
 @media (max-width:991px) {
  body {
-  padding-bottom:54px
  }
  .navigation {
   position:fixed;

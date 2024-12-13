@@ -124,6 +124,10 @@ const Call = {
         Call.localStream = stream;
         Call.remoteStream = new MediaStream();
 
+        if (Call.calltype === "video"){
+          document.getElementById("localStream-video").srcObject = stream
+        }
+
         stream.getTracks().forEach((track) => {
           Call.pc.addTrack(track, stream);
         });
@@ -176,6 +180,8 @@ ipc.on("rtc-offer", async (event, offer) => {
   }
   Call.callee_email = offer["email"];
   Call.calltype = offer.calltype;
+  const answer_end_call_button = document.getElementById("answer-end-call")
+  answer_end_call_button.style.background = "#6fbf79"
 
   $("#chat").hide();
   $("#call").show();
@@ -184,14 +190,18 @@ ipc.on("rtc-offer", async (event, offer) => {
   } else if (offer.calltype === "video") {
     Call.constraint = { audio: true, video: true };
   }
-  document
-    .getElementById("answer-end-call")
+  
+  answer_end_call_button
     .addEventListener("click", (event) => {
       return navigator.mediaDevices
         .getUserMedia(Call.constraint)
         .then((stream) => {
           Call.localStream = stream;
           Call.remoteStream = new MediaStream();
+
+          if (Call.calltype === "video"){
+            document.getElementById("localStream-video").srcObject = stream
+          }
 
           stream.getTracks().forEach((track) => {
             Call.pc.addTrack(track, stream);
@@ -209,6 +219,7 @@ ipc.on("rtc-offer", async (event, offer) => {
             };
             let sendAnswer = { answer: ans, email: offer["email"] };
             ipc.send("answer", sendAnswer);
+            answer_end_call_button.style.background = "#e05b5d"
           } else {
             Call.pc.close();
             call_ongoing == false;
@@ -221,12 +232,15 @@ Call.pc.ontrack = (event) => {
   console.log("caller", event);
   if (Call.calltype === "audio") {
     audio_for_call_element.srcObject = event.streams[0];
+  } else {
+    document.getElementById("remoteStream-video").srcObject = event.streams[0]
   }
 };
 
 Call.pc.addEventListener("iceconnectionstatechange", () => {
   console.log(Call.pc.iceConnectionState);
 });
+
 
 Call.pc.onicecandidate = (event) => {
   if (event.candidate) {
@@ -256,52 +270,6 @@ ipc.on("icecandidate", (event, candidate) => {
     Call.pc.addIceCandidate(candidate);
   }
 });
-
-// ipc.on("recieve_call_data",(event,data) => {
-//     let blob = new Blob([data], {type: "audio/webm"})
-//     callRemoteStreamAudio.src = createObjectURL(blob)
-// })
-
-// ipc.on("startAudioCall", async (event, offer) => {
-//     if (panel_visibility != true) {
-//         show_send_message_panel(contact_email_and_saved_name[offer["caller"]])
-//     }
-
-//     $("#chat").hide()
-//     $("#call").show()
-
-//     let constraint = null
-//     if (offer["call_type"] === "audio") {
-//         constraint = { "audio": true, "video": false }
-//     } else if (offer["call_type"] === "video") {
-//         constraint = { "audio": true, "video": true }
-//     }
-//     document.getElementById("answer-end-call").addEventListener("click", async (event) => {
-//         if (call_ongoing === false) {
-
-//             return navigator.mediaDevices.getUserMedia(constraint)
-//                 .then((stream) => {
-
-//                     voice_call_media = new MediaRecorder(stream);
-//                     voice_call_media.start();
-
-//                     voice_call_media.onstart = (event) => {
-//                         call_ongoing = true;
-//                     }
-
-//                     voice_call_media.ondataavailable = (event) => {
-//                         ipc.send("voice_call_audio_data", JSON.stringify({"call_room":offer["call_room"], "data":event.data}))
-//                     }
-
-//                 })
-
-//         } else {
-//             call_ongoing = false
-//             voice_call_media.stop()
-//         }
-
-//     })
-// })
 
 var recording_audio = false;
 var voice_callBTN;
@@ -1190,19 +1158,20 @@ const show_send_message_panel = (panel_name, messages) => {
                     </div>
                 </div>
                 <div class="call" id="call">
+                  <div style="height: 30%; width: 35%;">
+                                                <video class="video" src="" id="remoteStream-video" autoplay playsinline></video>
+                                            </div>
+                    <video class="video" muted id="localStream-video" autoplay playsinline></video>
+                    
                     <div class="content">
                         <div class="container">
                             <div class="col-md-12">
-                                <div class="inside">
+                                <div class="inside" id="call-inside">
                                     <div class="panel">
-                                        <div class="participant">
-                                            <video class="video" src="" id="localStream-video" autoplay playsinline></video>
+                                        <div class="participant" id="call-connecting">
                                             <span>Connecting</span>
-                                            <div style="height: 30%; width: 35%;">
-                                                <video class="video" src="" id="remoteStream-video" autoplay playsinline></video>
-                                            </div>
                                         </div>							
-                                        <div class="options">
+                                        <div class="options" id="call-options">
                                             <button class="btn option"><i class="material-icons md-30">mic</i></button>
                                             <button class="btn option"><i class="material-icons md-30">videocam</i></button>
                                             <button id="answer-end-call" class="btn option call-end"><i id="call-answer-end-btn" class="material-icons md-30">call_end</i></button>
@@ -1232,11 +1201,10 @@ const show_send_message_panel = (panel_name, messages) => {
 
   video_callBTN = document.getElementById("video-call");
   video_callBTN.addEventListener("click", (event) => {
-    // Call.calltype = "video"
-    // Call.callee_email = account_db[panel_name]["email"]
-    // Call.start()
+    Call.calltype = "video"
+    Call.callee_email = account_db[panel_name]["email"]
+    Call.start()
 
-    ipc.send("start_videoCall", (event) => {});
   });
 
   $("#contactsModal").modal("hide");
@@ -1300,6 +1268,7 @@ const show_send_message_panel = (panel_name, messages) => {
   document
     .getElementById("insert_emoji")
     .addEventListener("mouseout", (event) => {
+      console.log(event.clientX)
       emoji_container.style.transform = "scale(0)";
       emoji_container.style.transition = "transition 300ms ease-in-out";
     });

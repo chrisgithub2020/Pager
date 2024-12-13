@@ -213,6 +213,7 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
+process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = true
 
 // ! Connect to server immediately app starts
 app.on("will-finish-launching", () => {
