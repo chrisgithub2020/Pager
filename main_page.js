@@ -133,25 +133,24 @@ const Call = {
           Call.pc.addTrack(track, stream);
         });
 
-        Call.pc.addEventListener("iceconnectionstatechange", () => {
-          console.log(Call.pc.iceConnectionState);
-          if (Call.pc.iceConnectionState === "closed"){
-            stream.getTracks().forEach(track => track.stop())
-          }
-        });
-
-
         dataChannel.onmessage = (event)=>{
-          if (event.data === "im done"){
-            dataChannel.send("ok")
-            document.getElementById("localStream-video").srcObject = null
-            document.getElementById("remoteStream-video").srcObject = null
+          if (event.data === "ok"){
+            console.log(event.data)
             stream.getTracks().forEach((track)=>{
               track.stop()
             }) 
             dataChannel.close()
             Call.pc.close()
-            $("#call").hide(); 
+            $("#call").hide();
+          } else if (event.data === "im done"){
+            dataChannel.send("ok")
+            document.getElementByIsd("localStream-video").srcObject = null
+            document.getElementById("remoteStream-video").srcObject = null
+            stream.getTracks().forEach((track)=>{
+              track.stop()
+            }) 
+            dataChannel.close()
+            $("#call").hide();
           }
         }
       })
@@ -200,6 +199,7 @@ const Call = {
         document.getElementById("localStream-video").srcObject = null
         document.getElementById("remoteStream-video").srcObject = null
         dataChannel.send("im done")
+        console.log("done sending")
       }
     })
 
@@ -243,13 +243,6 @@ ipc.on("rtc-offer", async (event, offer) => {
           stream.getTracks().forEach((track) => {
             Call.pc.addTrack(track, stream);
           });
-          
-          Call.pc.addEventListener("iceconnectionstatechange", () => {
-            console.log(Call.pc.iceConnectionState);
-            if (Call.pc.iceConnectionState === "closed"){
-              stream.getTracks().forEach(track => track.stop())
-            }
-          });
 
           dataChannel.onmessage = (event)=>{
             if (event.data === "im done"){
@@ -260,8 +253,15 @@ ipc.on("rtc-offer", async (event, offer) => {
                 track.stop()
               }) 
               dataChannel.close()
-              Call.pc.close()
               $("#call").hide();            
+            } else if (event.data === "ok"){
+              console.log(event.data)
+              stream.getTracks().forEach((track)=>{
+                track.stop()
+              }) 
+              dataChannel.close()
+              Call.pc.close()
+              $("#call").hide();
             }
           }
         })
