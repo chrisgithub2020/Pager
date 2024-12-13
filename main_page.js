@@ -148,7 +148,6 @@ const Call = {
             stream.getTracks().forEach((track)=>{
               track.stop()
             }) 
-            dataChannel.close()
             $("#call").hide();
           }
         }
@@ -265,6 +264,7 @@ ipc.on("rtc-offer", async (event, offer) => {
         })
         .then(async () => {
           if (!call_ongoing) {
+            call_ongoing = true
             Call.pc.setRemoteDescription(offer["offer"]);
             Call.pc.addIceCandidate(new RTCIceCandidate(ICE_Candidate));
             let answer = await Call.pc.createAnswer();
