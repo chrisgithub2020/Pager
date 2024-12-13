@@ -186,7 +186,7 @@ const Call = {
   },
 };
 
-Call.pc.ondatachannel((event) => {
+Call.pc.ondatachannel = (event) => {
   const dataChannel = event.channel
 
   dataChannel.onopen(() => {
@@ -196,7 +196,7 @@ Call.pc.ondatachannel((event) => {
   dataChannel.onmessage = (event) => {
     console.log("message ", event.data)
   }
-})
+}
 
 ipc.on("rtc-offer", async (event, offer) => {
   if (panel_visibility != true) {
