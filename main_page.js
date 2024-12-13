@@ -105,7 +105,7 @@ function MediaMessage(
 }
 
 const Call = {
-  pc: new RTCPeerConnection(stun_server),
+  pc: new RTCPeerConnection(stun_server, {optional: [{RtpDataChannells:true}]}),
   calltype: null,
   localStream: null,
   remoteStream: null,
