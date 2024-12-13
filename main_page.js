@@ -133,6 +133,14 @@ const Call = {
           Call.pc.addTrack(track, stream);
         });
 
+        Call.pc.addEventListener("iceconnectionstatechange", () => {
+          console.log(Call.pc.iceConnectionState);
+          if (Call.pc.iceConnectionState === "closed"){
+            stream.getTracks().forEach(track => track.stop())
+          }
+        });
+
+
         dataChannel.onmessage = (event)=>{
           if (event.data === "im done"){
             dataChannel.send("ok")
@@ -142,6 +150,7 @@ const Call = {
               track.stop()
             }) 
             dataChannel.close()
+            Call.pc.close()
             $("#call").hide(); 
           }
         }
@@ -191,8 +200,6 @@ const Call = {
         document.getElementById("localStream-video").srcObject = null
         document.getElementById("remoteStream-video").srcObject = null
         dataChannel.send("im done")
-        const stream = Call.pc.getLocalStreams()[0]
-        stream.stop()
       }
     })
 
@@ -236,6 +243,13 @@ ipc.on("rtc-offer", async (event, offer) => {
           stream.getTracks().forEach((track) => {
             Call.pc.addTrack(track, stream);
           });
+          
+          Call.pc.addEventListener("iceconnectionstatechange", () => {
+            console.log(Call.pc.iceConnectionState);
+            if (Call.pc.iceConnectionState === "closed"){
+              stream.getTracks().forEach(track => track.stop())
+            }
+          });
 
           dataChannel.onmessage = (event)=>{
             if (event.data === "im done"){
@@ -246,6 +260,7 @@ ipc.on("rtc-offer", async (event, offer) => {
                 track.stop()
               }) 
               dataChannel.close()
+              Call.pc.close()
               $("#call").hide();            
             }
           }
@@ -268,8 +283,6 @@ ipc.on("rtc-offer", async (event, offer) => {
             document.getElementById("localStream-video").srcObject = null
             document.getElementById("remoteStream-video").srcObject = null
             dataChannel.send("im done")
-            const stream = Call.pc.getLocalStreams()[0]
-            stream.stop()
           }
         });
     });
