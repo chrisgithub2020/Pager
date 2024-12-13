@@ -123,6 +123,10 @@ const Call = {
     } else if (Call.calltype === "video") {
       Call.constraint = { audio: true, video: true };
     }
+    const dataChannel = Call.pc.createDataChannel("endChannel", {
+      negotiated: true,
+      id: 0,
+    });
     return navigator.mediaDevices
       .getUserMedia(Call.constraint)
       .then((stream) => {
@@ -211,10 +215,7 @@ const Call = {
   },
 };
 
-const dataChannel = Call.pc.createDataChannel("endChannel", {
-  negotiated: true,
-  id: 0,
-});
+
 
 ipc.on("rtc-offer", async (event, offer) => {
   if (Call.pc.signalingState === "closed"){
@@ -238,6 +239,10 @@ ipc.on("rtc-offer", async (event, offer) => {
 
   answer_end_call_button.addEventListener("click", (event) => {
     if (!call_ongoing) {
+      const dataChannel = Call.pc.createDataChannel("endChannel", {
+        negotiated: true,
+        id: 0,
+      });
       return navigator.mediaDevices
         .getUserMedia(Call.constraint)
         .then((stream) => {
