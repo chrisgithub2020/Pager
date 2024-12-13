@@ -141,6 +141,8 @@ const Call = {
             }) 
             dataChannel.close()
             Call.pc.close()
+            $("#call").hide();         
+
           }
         }
       })
@@ -243,7 +245,8 @@ ipc.on("rtc-offer", async (event, offer) => {
               stream.getTracks().forEach((track)=>{
                 track.stop()
               }) 
-              dataChannel.close()            
+              dataChannel.close()
+              $("#call").hide();            
             }
           }
         })
