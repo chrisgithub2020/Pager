@@ -131,6 +131,7 @@ const Call = {
         stream.getTracks().forEach((track) => {
           Call.pc.addTrack(track, stream);
         });
+
       })
       .then(() => {
         Call.initiate_connection();
@@ -173,14 +174,23 @@ const Call = {
       }
     });
 
+    
     document.getElementById("answer-end-call").addEventListener("click", (event, answer) => {
       if (call_ongoing){
-        Call.pc.close();
-        call_ongoing = false;
+        dataChannel.send("im done")
       }
     })
+    
   },
 };
+const dataChannel = Call.pc.createDataChannel()
+dataChannel.addEventListener("message", (event) => {
+  const message = event.data
+  if (message === "im done"){
+    console.log("time to close")
+  }
+  // call_ongoing = false;
+})
 
 ipc.on("rtc-offer", async (event, offer) => {
   if (panel_visibility != true) {
@@ -237,9 +247,7 @@ ipc.on("rtc-offer", async (event, offer) => {
     });
 });
 
-Call.pc.addEventListener("close", ()=>{
-  console.log("connection closed")
-})
+
 
 Call.pc.ontrack = (event) => {
   console.log("caller", event);
@@ -252,6 +260,12 @@ Call.pc.ontrack = (event) => {
 
 Call.pc.addEventListener("iceconnectionstatechange", () => {
   console.log(Call.pc.iceConnectionState);
+  if (Call.pc.iceConnectionState === "disconnected") {
+    // $("#call").hide();
+    // $("#chat").show();
+    console.log("call ended")
+    document.getElementById("remoteStream-video").srcObject = null
+  }
 });
 
 
