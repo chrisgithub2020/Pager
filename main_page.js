@@ -143,6 +143,7 @@ const Call = {
             Call.pc.close()
             $("#call").hide();
           } else if (event.data === "im done"){
+            dataChannel.send("ok")
             document.getElementById("localStream-video").srcObject = null
             document.getElementById("remoteStream-video").srcObject = null
             stream.getTracks().forEach((track)=>{
@@ -253,6 +254,7 @@ ipc.on("rtc-offer", async (event, offer) => {
               dataChannel.close()
               $("#call").hide();            
             } else if (event.data === "ok"){
+              console.log("okkk")
               stream.getTracks().forEach((track)=>{
                 track.stop()
               }) 
