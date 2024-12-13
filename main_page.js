@@ -141,8 +141,15 @@ const Call = {
             }) 
             dataChannel.close()
             Call.pc.close()
-            $("#call").hide();         
-
+            $("#call").hide();
+          } else if (event.data === "im done"){
+            document.getElementById("localStream-video").srcObject = null
+            document.getElementById("remoteStream-video").srcObject = null
+            stream.getTracks().forEach((track)=>{
+              track.stop()
+            }) 
+            dataChannel.close()
+            $("#call").hide();
           }
         }
       })
@@ -238,7 +245,6 @@ ipc.on("rtc-offer", async (event, offer) => {
 
           dataChannel.onmessage = (event)=>{
             if (event.data === "im done"){
-              console.log(event.data)
               dataChannel.send("ok")
               document.getElementById("localStream-video").srcObject = null
               document.getElementById("remoteStream-video").srcObject = null
@@ -247,6 +253,13 @@ ipc.on("rtc-offer", async (event, offer) => {
               }) 
               dataChannel.close()
               $("#call").hide();            
+            } else if (event.data === "ok"){
+              stream.getTracks().forEach((track)=>{
+                track.stop()
+              }) 
+              dataChannel.close()
+              Call.pc.close()
+              $("#call").hide();
             }
           }
         })
@@ -264,8 +277,9 @@ ipc.on("rtc-offer", async (event, offer) => {
             ipc.send("answer", sendAnswer);
             answer_end_call_button.style.background = "#e05b5d"
           } else {
-            Call.pc.close();
-            call_ongoing == false;
+            document.getElementById("localStream-video").srcObject = null
+            document.getElementById("remoteStream-video").srcObject = null
+            dataChannel.send("im done")
           }
         });
     });
