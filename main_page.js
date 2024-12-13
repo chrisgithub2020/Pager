@@ -174,22 +174,30 @@ const Call = {
       }
     });
 
-    
+    const dataChannel = Call.pc.createDataChannel()
     document.getElementById("answer-end-call").addEventListener("click", (event, answer) => {
       if (call_ongoing){
         dataChannel.send("im done")
       }
     })
-    
+    dataChannel.addEventListener("message", (event) => {
+      const message = event.data
+      console.log("data channel message ", message)
+      // call_ongoing = false;
+    })
   },
 };
-const dataChannel = Call.pc.createDataChannel()
-dataChannel.addEventListener("message", (event) => {
-  const message = event.data
-  if (message === "im done"){
-    console.log("time to close")
+
+Call.pc.ondatachannel((event) => {
+  const dataChannel = event.channel
+
+  dataChannel.onopen(() => {
+    console.log("opened")
+  })
+
+  dataChannel.onmessage = (event) => {
+    console.log("message ", event.data)
   }
-  // call_ongoing = false;
 })
 
 ipc.on("rtc-offer", async (event, offer) => {
