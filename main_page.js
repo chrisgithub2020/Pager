@@ -132,6 +132,14 @@ const Call = {
         stream.getTracks().forEach((track) => {
           Call.pc.addTrack(track, stream);
         });
+
+        dataChannel.onmessage = (event)=>{
+          if (event.data === "ok"){
+            console.log(event.data)
+            stream[0].stop()
+            Call.pc.close()
+          }
+        }
       })
       .then(() => {
         Call.initiate_connection();
@@ -175,38 +183,20 @@ const Call = {
     });
     document.getElementById("answer-end-call").addEventListener("click", (event, answer) => {
       if (call_ongoing){
+        document.getElementById("localStream-video").srcObject = null
+        document.getElementById("remoteStream-video").srcObject = null
         dataChannel.send("im done")
         console.log("done sending")
       }
     })
 
-    dataChannel.onopen = (event)=>{
-      console.log("it is opened")
-    }
-    dataChannel.addEventListener("message", (event) => {
-      const message = event.data
-      console.log("data channel message ", message)
-      // call_ongoing = false;
-    })
   },
 };
 
-var dataChannel = Call.pc.createDataChannel("endChannel", {negotiated: true, id: 0});
+const dataChannel = Call.pc.createDataChannel("endChannel", {negotiated: true, id: 0});
 
 
 
-Call.pc.ondatachannel = (event) => {
-  const dataChannel = event.channel
-  console.log("dataChannel")
-
-  dataChannel.onopen(() => {
-    console.log("opened")
-  })
-
-  dataChannel.onmessage = (event) => {
-    console.log("message ", event.data)
-  }
-}
 
 ipc.on("rtc-offer", async (event, offer) => {
   if (panel_visibility != true) {
@@ -240,6 +230,16 @@ ipc.on("rtc-offer", async (event, offer) => {
           stream.getTracks().forEach((track) => {
             Call.pc.addTrack(track, stream);
           });
+
+          dataChannel.onmessage = (event)=>{
+            if (event.data === "im done"){
+              console.log(event.data)
+              dataChannel.send("ok")
+              document.getElementById("localStream-video").srcObject = null
+              document.getElementById("remoteStream-video").srcObject = null
+              stream[0].stop()              
+            }
+          }
         })
         .then(async () => {
           if (!call_ongoing) {
