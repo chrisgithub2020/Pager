@@ -171,8 +171,37 @@ const Call = {
         Call.pc.addIceCandidate(new RTCIceCandidate(ICE_Candidate));
       }
     });
+<<<<<<< HEAD
   },
 };
+=======
+
+    const dataChannel = Call.pc.createDataChannel()
+    document.getElementById("answer-end-call").addEventListener("click", (event, answer) => {
+      if (call_ongoing){
+        dataChannel.send("im done")
+      }
+    })
+    dataChannel.addEventListener("message", (event) => {
+      const message = event.data
+      console.log("data channel message ", message)
+      // call_ongoing = false;
+    })
+  },
+};
+
+Call.pc.ondatachannel((event) => {
+  const dataChannel = event.channel
+
+  dataChannel.onopen(() => {
+    console.log("opened")
+  })
+
+  dataChannel.onmessage = (event) => {
+    console.log("message ", event.data)
+  }
+})
+>>>>>>> 9d54fa8f49a7d443ee5ba438cefd0fe0555ed954
 
 ipc.on("rtc-offer", async (event, offer) => {
   if (panel_visibility != true) {
