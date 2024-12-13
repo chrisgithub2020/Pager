@@ -134,22 +134,15 @@ const Call = {
         });
 
         dataChannel.onmessage = (event)=>{
-          if (event.data === "ok"){
-            console.log(event.data)
-            stream.getTracks().forEach((track)=>{
-              track.stop()
-            }) 
-            dataChannel.close()
-            Call.pc.close()
-            $("#call").hide();
-          } else if (event.data === "im done"){
+          if (event.data === "im done"){
             dataChannel.send("ok")
             document.getElementById("localStream-video").srcObject = null
             document.getElementById("remoteStream-video").srcObject = null
             stream.getTracks().forEach((track)=>{
               track.stop()
             }) 
-            $("#call").hide();
+            dataChannel.close()
+            $("#call").hide(); 
           }
         }
       })
@@ -198,7 +191,8 @@ const Call = {
         document.getElementById("localStream-video").srcObject = null
         document.getElementById("remoteStream-video").srcObject = null
         dataChannel.send("im done")
-        console.log("done sending")
+        const stream = Call.pc.getLocalStreams()[0]
+        stream.stop()
       }
     })
 
@@ -253,14 +247,6 @@ ipc.on("rtc-offer", async (event, offer) => {
               }) 
               dataChannel.close()
               $("#call").hide();            
-            } else if (event.data === "ok"){
-              console.log("okkk")
-              stream.getTracks().forEach((track)=>{
-                track.stop()
-              }) 
-              dataChannel.close()
-              Call.pc.close()
-              $("#call").hide();
             }
           }
         })
@@ -282,6 +268,8 @@ ipc.on("rtc-offer", async (event, offer) => {
             document.getElementById("localStream-video").srcObject = null
             document.getElementById("remoteStream-video").srcObject = null
             dataChannel.send("im done")
+            const stream = Call.pc.getLocalStreams()[0]
+            stream.stop()
           }
         });
     });
