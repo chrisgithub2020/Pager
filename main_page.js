@@ -136,7 +136,10 @@ const Call = {
         dataChannel.onmessage = (event)=>{
           if (event.data === "ok"){
             console.log(event.data)
-            stream[0].stop()
+            stream.getTracks().forEach((track)=>{
+              track.stop()
+            }) 
+            dataChannel.close()
             Call.pc.close()
           }
         }
@@ -237,7 +240,10 @@ ipc.on("rtc-offer", async (event, offer) => {
               dataChannel.send("ok")
               document.getElementById("localStream-video").srcObject = null
               document.getElementById("remoteStream-video").srcObject = null
-              stream[0].stop()              
+              stream.getTracks().forEach((track)=>{
+                track.stop()
+              }) 
+              dataChannel.close()            
             }
           }
         })
