@@ -172,7 +172,7 @@ const Call = {
       }
     });
 
-    const dataChannel = Call.pc.createDataChannel()
+    const dataChannel = Call.pc.createDataChannel("endChannel")
     document.getElementById("answer-end-call").addEventListener("click", (event, answer) => {
       if (call_ongoing){
         dataChannel.send("im done")
@@ -188,6 +188,7 @@ const Call = {
 
 Call.pc.ondatachannel = (event) => {
   const dataChannel = event.channel
+  console.log("dataChannel")
 
   dataChannel.onopen(() => {
     console.log("opened")
