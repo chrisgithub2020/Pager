@@ -139,6 +139,7 @@ const Call = {
 
   initiate_connection: async () => {
     console.log("Initiating Call");
+    call_ongoing = true;
     var offerOptions = null;
     if (Call.calltype == "audio") {
       offerOptions = {
@@ -171,6 +172,13 @@ const Call = {
         Call.pc.addIceCandidate(new RTCIceCandidate(ICE_Candidate));
       }
     });
+
+    document.getElementById("answer-end-call").addEventListener("click", (event, answer) => {
+      if (call_ongoing){
+        Call.pc.close();
+        call_ongoing = false;
+      }
+    })
   },
 };
 
@@ -209,6 +217,7 @@ ipc.on("rtc-offer", async (event, offer) => {
         })
         .then(async () => {
           if (!call_ongoing) {
+            call_ongoing = true;
             Call.pc.setRemoteDescription(offer["offer"]);
             Call.pc.addIceCandidate(new RTCIceCandidate(ICE_Candidate));
             let answer = await Call.pc.createAnswer();
@@ -227,6 +236,10 @@ ipc.on("rtc-offer", async (event, offer) => {
         });
     });
 });
+
+Call.pc.addEventListener("close", ()=>{
+  console.log("connection closed")
+})
 
 Call.pc.ontrack = (event) => {
   console.log("caller", event);
