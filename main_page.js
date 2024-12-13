@@ -35,7 +35,6 @@ var remoteStream = null;
 var call_ongoing = false;
 let layout = document.getElementById(".");
 var ICE_Candidate = null;
-var dataChannel = Call.pc.createDataChannel("endChannel", {negotiated: true, id: 0});
 
 
 //When a user clicks a chat and want to start communicating
@@ -191,6 +190,8 @@ const Call = {
     })
   },
 };
+
+var dataChannel = Call.pc.createDataChannel("endChannel", {negotiated: true, id: 0});
 
 
 
