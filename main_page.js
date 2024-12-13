@@ -171,10 +171,6 @@ const Call = {
         Call.pc.addIceCandidate(new RTCIceCandidate(ICE_Candidate));
       }
     });
-<<<<<<< HEAD
-  },
-};
-=======
 
     const dataChannel = Call.pc.createDataChannel()
     document.getElementById("answer-end-call").addEventListener("click", (event, answer) => {
@@ -201,7 +197,6 @@ Call.pc.ondatachannel((event) => {
     console.log("message ", event.data)
   }
 })
->>>>>>> 9d54fa8f49a7d443ee5ba438cefd0fe0555ed954
 
 ipc.on("rtc-offer", async (event, offer) => {
   if (panel_visibility != true) {
