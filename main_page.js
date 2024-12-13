@@ -35,6 +35,8 @@ var remoteStream = null;
 var call_ongoing = false;
 let layout = document.getElementById(".");
 var ICE_Candidate = null;
+var dataChannel = Call.pc.createDataChannel("endChannel", {negotiated: true, id: 0});
+
 
 //When a user clicks a chat and want to start communicating
 let chat_to_perform_action = null;
@@ -139,6 +141,7 @@ const Call = {
 
   initiate_connection: async () => {
     console.log("Initiating Call");
+    call_ongoing = true;
     var offerOptions = null;
     if (Call.calltype == "audio") {
       offerOptions = {
@@ -171,13 +174,16 @@ const Call = {
         Call.pc.addIceCandidate(new RTCIceCandidate(ICE_Candidate));
       }
     });
-
-    const dataChannel = Call.pc.createDataChannel("endChannel")
     document.getElementById("answer-end-call").addEventListener("click", (event, answer) => {
       if (call_ongoing){
         dataChannel.send("im done")
+        console.log("done sending")
       }
     })
+
+    dataChannel.onopen = (event)=>{
+      console.log("it is opened")
+    }
     dataChannel.addEventListener("message", (event) => {
       const message = event.data
       console.log("data channel message ", message)
@@ -185,6 +191,8 @@ const Call = {
     })
   },
 };
+
+
 
 Call.pc.ondatachannel = (event) => {
   const dataChannel = event.channel
