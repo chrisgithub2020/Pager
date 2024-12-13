@@ -131,7 +131,6 @@ const Call = {
         stream.getTracks().forEach((track) => {
           Call.pc.addTrack(track, stream);
         });
-
       })
       .then(() => {
         Call.initiate_connection();
@@ -140,7 +139,6 @@ const Call = {
 
   initiate_connection: async () => {
     console.log("Initiating Call");
-    call_ongoing = true;
     var offerOptions = null;
     if (Call.calltype == "audio") {
       offerOptions = {
@@ -173,24 +171,8 @@ const Call = {
         Call.pc.addIceCandidate(new RTCIceCandidate(ICE_Candidate));
       }
     });
-
-    
-    document.getElementById("answer-end-call").addEventListener("click", (event, answer) => {
-      if (call_ongoing){
-        dataChannel.send("im done")
-      }
-    })
-    
   },
 };
-const dataChannel = Call.pc.createDataChannel()
-dataChannel.addEventListener("message", (event) => {
-  const message = event.data
-  if (message === "im done"){
-    console.log("time to close")
-  }
-  // call_ongoing = false;
-})
 
 ipc.on("rtc-offer", async (event, offer) => {
   if (panel_visibility != true) {
@@ -227,7 +209,6 @@ ipc.on("rtc-offer", async (event, offer) => {
         })
         .then(async () => {
           if (!call_ongoing) {
-            call_ongoing = true;
             Call.pc.setRemoteDescription(offer["offer"]);
             Call.pc.addIceCandidate(new RTCIceCandidate(ICE_Candidate));
             let answer = await Call.pc.createAnswer();
@@ -247,8 +228,6 @@ ipc.on("rtc-offer", async (event, offer) => {
     });
 });
 
-
-
 Call.pc.ontrack = (event) => {
   console.log("caller", event);
   if (Call.calltype === "audio") {
@@ -260,12 +239,6 @@ Call.pc.ontrack = (event) => {
 
 Call.pc.addEventListener("iceconnectionstatechange", () => {
   console.log(Call.pc.iceConnectionState);
-  if (Call.pc.iceConnectionState === "disconnected") {
-    // $("#call").hide();
-    // $("#chat").show();
-    console.log("call ended")
-    document.getElementById("remoteStream-video").srcObject = null
-  }
 });
 
 
