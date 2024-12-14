@@ -188,7 +188,7 @@ const Call = {
         if (call_ongoing) {
           document.getElementById("localStream-video").srcObject = null;
           document.getElementById("remoteStream-video").srcObject = null;
-          Call.pc.getReceivers().forEach(event => event.track.stop())
+          Call.pc.getSenders().forEach(event => event.track.stop())
           call_ongoing = false
           ipc.send("endCall", true)
         }
