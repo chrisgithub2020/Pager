@@ -181,11 +181,11 @@ const Call = {
       .getElementById("answer-end-call")
       .addEventListener("click", (event, answer) => {
         if (call_ongoing) {
-          document.getElementById("localStream-video").srcObject = null;
-          document.getElementById("remoteStream-video").srcObject = null;
+          disableCallEle()
           Call.pc.getSenders().forEach(event => event.track.stop())
           call_ongoing = false
           ipc.send("endCall", Call.callee_email)
+          $("#call").hide();
           Call.pc.close()
         }
       });
@@ -194,7 +194,19 @@ const Call = {
 ipc.on("endCall-alert",(event)=>{// end call signal from server
   Call.pc.getSenders().forEach(event=> event.track.stop())
   Call.pc.close()
+  disableCallEle()
+  $("#call").hide();
+
 })
+
+const disableCallEle = () => {
+  if (Call.calltype === "video"){
+    document.getElementById("localStream-video").srcObject = null;
+    document.getElementById("remoteStream-video").srcObject = null;
+  } else {
+    audio_for_call_element.srcObject = null
+  }
+}
 
 ipc.on("rtc-offer", async (event, offer) => {
   if (Call.pc.signalingState === "closed"){// will create another instance after connection is closed and another call
@@ -249,12 +261,12 @@ ipc.on("rtc-offer", async (event, offer) => {
           answer_end_call_button.style.background = "#e05b5d";
         });
     } else {
-      document.getElementById("localStream-video").srcObject = null;
-      document.getElementById("remoteStream-video").srcObject = null;
+      disableCallEle()
       Call.pc.getSenders().forEach(event => event.track.stop())
       ipc.send("endCall", Call.callee_email)
       call_ongoing = false
       Call.pc.close()
+      $("#call").hide();
     }
   });
 });
