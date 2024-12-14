@@ -141,9 +141,10 @@ const createWindow = () => {
         // event.sender.send("display_utility_on_startup", { "db": active_user_db_object})
         event.sender.send("display_utility_on_startup", { "db": active_user_db_object, "emoji": emojis_html })
 
-        /// ! Recieving calls
-        socket_functions.socket.on("incomingCall",(call_data)=>{
-          event.sender.send("startAudioCall",call_data)
+        /// ! ending calls
+        socket_functions.socket.on("end_call_alert", (command)=>{
+          console.log("end call again")
+          event.sender.send("endCall-alert", command)
         })
 
 
@@ -558,8 +559,5 @@ ipc.on("endCall", (event, mail)=>{
   console.log("end call alert")
 
   socket_functions.end_call(mail)
-  socket_functions.socket.on("end_call_alert", (command)=>{
-    console.log("end call again")
-    event.sender.send("endCall-alert", command)
-  })
+  
 })

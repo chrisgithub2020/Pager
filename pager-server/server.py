@@ -351,10 +351,13 @@ def join_clique_rooms(sid, clique_list):
 
 @sio.event
 def end_call(sid, callee):
+    print("i say end call", callee)
     callee = DB.find(filter={"email": callee}, table=DB.users_table)
     if callee:
+        print("boom")
         if callee["online_status"] == 1:
-            sio.emit("end_call_alert", True, to=callee["sid"])
+            print("online", callee["sid"])
+            sio.emit("end_call_alert", True, callee["sid"])
 
 
 @sio.event
