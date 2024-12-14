@@ -216,7 +216,7 @@ const Call = {
   },
 };
 
-const dataChannel = Call.pc.createDataChannel("endChannel", {
+let dataChannel = Call.pc.createDataChannel("endChannel", {
   negotiated: true,
   id: 0,
 });
