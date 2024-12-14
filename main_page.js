@@ -140,27 +140,7 @@ const Call = {
           Call.pc.addTrack(track, stream);
         });
 
-        dataChannel.onmessage = (event) => {
-          if (event.data === "ok") {
-            console.log(event.data);
-            stream.getTracks().forEach((track) => {
-              track.stop();
-            });
-            dataChannel.close();
-            Call.pc.close();
-            $("#call").hide();
-          } else if (event.data === "im done") {
-            dataChannel.send("ok");
-            document.getElementById("localStream-video").srcObject = null;
-            document.getElementById("remoteStream-video").srcObject = null;
-            stream.getTracks().forEach((track) => {
-              track.stop();
-            });
-            dataChannel.close();
-            call_ongoing = false
-            $("#call").hide();
-          }
-        };
+        
       })
       .then(() => {
         Call.initiate_connection();
@@ -208,9 +188,9 @@ const Call = {
         if (call_ongoing) {
           document.getElementById("localStream-video").srcObject = null;
           document.getElementById("remoteStream-video").srcObject = null;
-          dataChannel.send("im done");
-          console.log("done sending");
+          Call.pc.getReceivers().forEach(event => event.track.stop())
           call_ongoing = false
+          ipc.send("endCall", true)
         }
       });
   },
@@ -260,26 +240,7 @@ ipc.on("rtc-offer", async (event, offer) => {
             Call.pc.addTrack(track, stream);
           });
 
-          dataChannel.onmessage = (event) => {
-            if (event.data === "im done") {
-              dataChannel.send("ok");
-              document.getElementById("localStream-video").srcObject = null;
-              document.getElementById("remoteStream-video").srcObject = null;
-              stream.getTracks().forEach((track) => {
-                track.stop();
-              });
-              dataChannel.close();
-              $("#call").hide();
-            } else if (event.data === "ok") {
-              console.log(event.data);
-              stream.getTracks().forEach((track) => {
-                track.stop();
-              });
-              dataChannel.close();
-              Call.pc.close();
-              $("#call").hide();
-            }
-          };
+          
         })
         .then(async () => {
           call_ongoing = true;
@@ -298,7 +259,8 @@ ipc.on("rtc-offer", async (event, offer) => {
     } else {
       document.getElementById("localStream-video").srcObject = null;
       document.getElementById("remoteStream-video").srcObject = null;
-      dataChannel.send("im done");
+      Call.pc.getSenders().forEach(event => event.track.stop())
+      ipc.send("endCall", true)
       call_ongoing = false
     }
   });
