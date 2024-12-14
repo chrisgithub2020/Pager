@@ -158,6 +158,7 @@ const Call = {
               track.stop();
             });
             dataChannel.close();
+            call_ongoing = false
             $("#call").hide();
           }
         };
@@ -210,6 +211,7 @@ const Call = {
           document.getElementById("remoteStream-video").srcObject = null;
           dataChannel.send("im done");
           console.log("done sending");
+          call_ongoing = false
         }
       });
   },
@@ -299,6 +301,7 @@ ipc.on("rtc-offer", async (event, offer) => {
       document.getElementById("localStream-video").srcObject = null;
       document.getElementById("remoteStream-video").srcObject = null;
       dataChannel.send("im done");
+      call_ongoing = false
     }
   });
 });
