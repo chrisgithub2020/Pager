@@ -114,13 +114,6 @@ const Call = {
 
   start: () => {
     console.log("Call starting");
-    if (Call.pc.signalingState === "closed"){
-      Call.pc = new RTCPeerConnection(stun_server)
-      dataChannel = Call.pc.createDataChannel("endChannel", {
-        negotiated: true,
-        id: 0,
-      });
-    }
 
     if (Call.calltype === "audio") {
       Call.constraint = { audio: true, video: false };
@@ -215,19 +208,12 @@ const Call = {
   },
 };
 
-let dataChannel = Call.pc.createDataChannel("endChannel", {
+const dataChannel = Call.pc.createDataChannel("endChannel", {
   negotiated: true,
   id: 0,
 });
 
 ipc.on("rtc-offer", async (event, offer) => {
-  if (Call.pc.signalingState === "closed"){
-    Call.pc = new RTCPeerConnection(stun_server)
-    dataChannel = Call.pc.createDataChannel("endChannel", {
-      negotiated: true,
-      id: 0,
-    });
-  }
   if (panel_visibility != true) {
     show_send_message_panel(contact_email_and_saved_name[offer["email"]]);
   }
