@@ -1,6 +1,6 @@
 const io = require("socket.io-client")
 
-const socket = io("http://192.168.79.53:9000",{transports: ["polling","websocket"], upgrade:true, reconnection: true})
+const socket = io("http://192.168.177.53:9000",{transports: ["polling","websocket"], upgrade:true, reconnection: true})
 // socket.connect()
 module.exports.socket = socket
 
