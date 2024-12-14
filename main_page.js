@@ -186,13 +186,13 @@ const Call = {
           Call.pc.getSenders().forEach(event => event.track.stop())
           call_ongoing = false
           ipc.send("endCall", Call.callee_email)
+          Call.pc.close()
         }
       });
   },
 };
 ipc.on("endCall-alert",(event)=>{// end call signal from server
-  console.log("end call alert")
-  Call.pc.getReceivers().forEach(event=> event.track.stop())
+  Call.pc.getSenders().forEach(event=> event.track.stop())
   Call.pc.close()
 })
 
@@ -252,8 +252,9 @@ ipc.on("rtc-offer", async (event, offer) => {
       document.getElementById("localStream-video").srcObject = null;
       document.getElementById("remoteStream-video").srcObject = null;
       Call.pc.getSenders().forEach(event => event.track.stop())
-      ipc.send("endCall", true)
+      ipc.send("endCall", Call.callee_email)
       call_ongoing = false
+      Call.pc.close()
     }
   });
 });
