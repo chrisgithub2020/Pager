@@ -74,8 +74,8 @@ module.exports.enter_clique_rooms = async (list)=>{
     socket.emit("join_clique_rooms",list)
 }
 
-module.exports.start_audioCall = async (l)=>{
-    socket.emit("start_audio_call",l)
+module.exports.end_call = async (l)=>{
+    socket.emit("end_call",l)
 }
 
 module.exports.voice_call_data = async (call_data)=>{

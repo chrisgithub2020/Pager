@@ -350,17 +350,12 @@ def join_clique_rooms(sid, clique_list):
     thread.start()
 
 @sio.event
-def start_audio_call(sid, callee):
-    room_name = str(uuid.uuid4())
+def end_call(sid, callee):
     callee = DB.find(filter={"email": callee}, table=DB.users_table)
-    caller = DB.find(filter={"sid":sid}, table=DB.users_table)
-    if callee["online_status"] == 1:
-        sio.emit("incomingCall",{"call_type":"audio","caller":caller["email"],"call_room":room_name},callee["sid"])
-        sio.enter_room(sid=sid,room=room_name)
-        sio.enter_room(sid=callee["sid"],room=room_name)
-        sio.emit("audioCallStarted",room_name, sid)
-    else:
-        sio.emit("callee_offline",False,sid)
+    if callee:
+        if callee["online_status"] == 1:
+            sio.emit("end_call_alert", True)
+
 
 @sio.event
 def voice_call_data(sid,call_data):

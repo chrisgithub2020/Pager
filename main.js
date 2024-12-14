@@ -224,6 +224,7 @@ app.on("will-finish-launching", () => {
 })
 
 
+
 // ! Allowing user to choos image to send to chat
 ipc.on("open-file", async (event) => {
   let file = await dialog.showOpenDialog(mainWindow, { properties: ["openFile"], filters: { extensions: ["*"], name: "All files" } })
@@ -347,6 +348,8 @@ ipc.on("send_verification_code", (event, code) => {
     event.sender.send("verification_success", results)
   })
 })
+
+
 
 ///Restarting app after sign up(It also saves the new account)
 ipc.on("sign-up-complete", async (event, param) => {
@@ -551,11 +554,9 @@ ipc.on("start_audioCall",(event, audioCall) => {
 })
 
 
-
-// ipc.on("voice_call_audio_data",(event, voice_call_data)=>{
-//   voice_call_data = json.parse(voice_call_data)
-
-//   socket_functions.socket.on("recieve_call_data",(data)=>{
-//     event.sender.send("recieve_call_data",data);
-//   })
-// })
+ipc.on("endCall", (event)=>{
+  socket_functions.end_call(1)
+  socket_functions.socket.on("end_call_alert", (command)=>{
+    event.sender.send("endCall-alert", command)
+  })
+})
