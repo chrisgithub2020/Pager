@@ -555,6 +555,8 @@ ipc.on("start_audioCall",(event, audioCall) => {
 
 
 ipc.on("endCall", (event)=>{
+  console.log("end call alert")
+
   socket_functions.end_call(1)
   socket_functions.socket.on("end_call_alert", (command)=>{
     event.sender.send("endCall-alert", command)

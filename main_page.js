@@ -191,7 +191,8 @@ const Call = {
   },
 };
 ipc.on("endCall-alert",(event)=>{// end call signal from server
-  Call.pc.getSenders().forEach(event=> event.track.stop())
+  console.log("end call alert")
+  Call.pc.getReceivers().forEach(event=> event.track.stop())
   Call.pc.close()
 })
 

@@ -354,7 +354,7 @@ def end_call(sid, callee):
     callee = DB.find(filter={"email": callee}, table=DB.users_table)
     if callee:
         if callee["online_status"] == 1:
-            sio.emit("end_call_alert", True)
+            sio.emit("end_call_alert", True, to=callee["sid"])
 
 
 @sio.event
