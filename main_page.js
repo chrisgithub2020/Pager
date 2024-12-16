@@ -62,22 +62,21 @@ const Config = {
 };
 
 // var message = { "uuid": crypto.randomUUID(), "time": Date(), "type": "txt", "message": document.getElementById("message-area").value, "from": user_obj[user_obj["active"]]["email"], "to": "", "name": panel_name }
-function TextMessage(
-  type = "txt",
-  uuid = crypto.randomUUID(),
-  time = Date(),
-  message,
-  from = user_obj[user_obj["active"]]["email"],
-  to,
-  name
-) {
-  this.uuid = uuid;
-  this.time = time;
-  this.type = type;
-  this.message = message;
-  this.from = from;
-  this.to = to;
-  this.name = name;
+class TextMessage {
+  constructor (
+    message,
+    to,
+    name
+  ) {
+
+    this.uuid = crypto.randomUUID();
+    this.time = Date();
+    this.type = "txt";
+    this.message = message;
+    this.from = user_obj[user_obj["active"]]["email"];
+    this.to = to;
+    this.name = name;
+  }
 }
 // var message = { "uuid": crypto.randomUUID(), "time": Date(), "type": "txt", "path": '', "from": user_obj[user_obj["active"]]["email"], "to": account_db[panel_name]["email"], "name": panel_name }
 function MediaMessage(
@@ -113,8 +112,8 @@ const Call = {
   start: () => {
     console.log("Call starting");
     if (Call.pc.signalingState === "closed"){
-      Call.pc = new RTCPeerConnection(stun_server)
-      pcEvents()
+      Call.pc = new RTCPeerConnection(stun_server)// this changes memory location of our new pc object
+      pcEvents() // hence we must register event for pc again in memory
     }
 
     if (Call.calltype === "audio") {
@@ -1270,7 +1269,9 @@ const show_send_message_panel = (panel_name, messages) => {
     $("#chat").show();
   });
   document.getElementById("message-area").focus();
-  show_message = document.getElementById("show_messages");
+  show_message = document.getElementById("show_messages")
+  show_message.scrollTop = show_message.scrollHeight;
+  console.log(show_message.scrollTop, "client height")
 
   // ! Showing message in case user sends one
   send_message_btn.addEventListener("click", () => {
@@ -1283,11 +1284,13 @@ const show_send_message_panel = (panel_name, messages) => {
       message.to = panel_name;
       ipc.send("send_clique_message", message);
     } else {
-      message.to = account_db[panel_name]["email"];
-
-      ipc.send("send_text_message", message);
-
-      insert_message("me", message, "", message["type"]);
+      if (message.message != ""){
+        message.to = account_db[panel_name]["email"];
+  
+        ipc.send("send_text_message", message);
+  
+        insert_message("me", message, "", message["type"]);
+      }
     }
 
     document.getElementById("message-area").value = "";
