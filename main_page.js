@@ -1234,7 +1234,6 @@ const show_send_message_panel = (panel_name, messages) => {
 
   voice_callBTN = document.getElementById("voice-call");
   voice_callBTN.addEventListener("click", (event) => {
-    ipc.send("start_audioCall", account_db[panel_name]["email"]);
     event.stopPropagation();
     Call.calltype = "audio";
     Call.callee_email = account_db[panel_name]["email"];
