@@ -195,6 +195,7 @@ ipc.on("endCall-alert",(event)=>{// end call signal from server
   Call.pc.getSenders().forEach(event=> event.track.stop())
   Call.pc.close()
   disableCallEle()
+  call_ongoing = false
   $("#call").hide();
 
 })
