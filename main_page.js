@@ -114,6 +114,7 @@ const Call = {
     console.log("Call starting");
     if (Call.pc.signalingState === "closed"){
       Call.pc = new RTCPeerConnection(stun_server)
+      pcEvents()
     }
 
     if (Call.calltype === "audio") {
@@ -126,12 +127,14 @@ const Call = {
       .then((stream) => {
         Call.localStream = stream;
         Call.remoteStream = new MediaStream();
+        console.log(stream)
 
         if (Call.calltype === "video") {
           document.getElementById("localStream-video").srcObject = stream;
         }
 
         stream.getTracks().forEach((track) => {
+          console.log(track)
           Call.pc.addTrack(track, stream);
         });
 
@@ -212,6 +215,7 @@ const disableCallEle = () => {
 ipc.on("rtc-offer", async (event, offer) => {
   if (Call.pc.signalingState === "closed"){// will create another instance after connection is closed and another call
     Call.pc = new RTCPeerConnection(stun_server)
+    pcEvents()
   }
   if (panel_visibility != true) {// checking to see if panel is visible
     show_send_message_panel(contact_email_and_saved_name[offer["email"]]);
@@ -272,28 +276,33 @@ ipc.on("rtc-offer", async (event, offer) => {
   });
 });
 
-Call.pc.ontrack = (event) => {
-  console.log("caller", event);
-  if (Call.calltype === "audio") {
-    audio_for_call_element.srcObject = event.streams[0];
-  } else {
-    document.getElementById("remoteStream-video").srcObject = event.streams[0];
-  }
-};
+const pcEvents = () => {
 
-Call.pc.addEventListener("iceconnectionstatechange", () => {
-  console.log(Call.pc.iceConnectionState);
-});
+  Call.pc.ontrack = (event) => {
+    console.log("caller", event);
+    if (Call.calltype === "audio") {
+      audio_for_call_element.srcObject = event.streams[0];
+    } else {
+      document.getElementById("remoteStream-video").srcObject = event.streams[0];
+    }
+  };
+  
+  Call.pc.addEventListener("iceconnectionstatechange", () => {
+    console.log(Call.pc.iceConnectionState);
+  });
+  
+  Call.pc.onicecandidate = (event) => {
+    if (event.candidate) {
+      const cand_data = {
+        cand: event.candidate,
+        email: Call.callee_email,
+      };
+      ipc.send("send-ice-cand", JSON.stringify(cand_data));
+    }
+  };
+}
+pcEvents()
 
-Call.pc.onicecandidate = (event) => {
-  if (event.candidate) {
-    const cand_data = {
-      cand: event.candidate,
-      email: Call.callee_email,
-    };
-    ipc.send("send-ice-cand", JSON.stringify(cand_data));
-  }
-};
 
 const handleIceCand = () => {
   switch (Call.pc.iceGatheringState) {
