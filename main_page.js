@@ -9,6 +9,7 @@ const http = require("http");
 const os = require("os");
 // const {Config} = require("./config.js")
 const homeDir = os.homedir();
+const moment = require("moment")
 const {
   LocalFileData,
   getFileObjectFromLocalPath,
@@ -1101,6 +1102,9 @@ const insert_chat_card = async (card_name, msg) => {
   } else {
     image_path = `data:image/png;base64,${account_db[card_name]["profile_picture"]}`;
   }
+  let time = moment(new Date(account_db[card_name]["messages"][account_db[card_name]["messages"].length-1]["time"]))
+  let day = time.format("DD MMM")
+  console.log(time)
   if (card_name === "unknown") {
     var chat_card = `<a href="#list-chat" class="filterDiscussions all unread single" id="${card_name}" data-toggle="list" role="tab">
                             <img class="avatar-md" src="" data-toggle="tooltip" data-placement="top" title="Mildred" alt="avatar">
@@ -1108,7 +1112,7 @@ const insert_chat_card = async (card_name, msg) => {
                             </div>
                             <div class="data">
                                 <h5>${card_name}</h5>
-                                <span>Thu</span>
+                                <span>${day}</span>
                                 <p>Unfortunately your session today has been cancelled!</p>
                             </div>
                         </a>`;
@@ -1119,7 +1123,7 @@ const insert_chat_card = async (card_name, msg) => {
                             </div>
                             <div class="data" id="${card_name}-card-details">
                                 <h5>${card_name}</h5>
-                                <span>Thursday</span>
+                                <span>${day}</span>
                                 
                             </div>
                         </a>`;
@@ -1164,7 +1168,7 @@ const show_send_message_panel = (panel_name, messages) => {
                                         <div class="dropdown-menu dropdown-menu-right">
                                             <button id="voice-call" class="dropdown-item connect" name="1"><i class="material-icons">phone_in_talk</i>Voice Call</button>
                                             <button id="video-call" class="dropdown-item connect" name="1"><i class="material-icons">videocam</i>Video Call</button>
-                                            <button class="dropdown-item"><i class="material-icons">clear</i>Clear History</button>
+                                            <button class="dropdown-item" id="clear_historyButton"><i class="material-icons">clear</i>Clear History</button>
                                             <button class="dropdown-item"><i class="material-icons">block</i>Block Contact</button>
                                             <button class="dropdown-item"><i class="material-icons">delete</i>Delete Contact</button>
                                         </div>
@@ -1292,7 +1296,7 @@ const show_send_message_panel = (panel_name, messages) => {
         insert_message("me", message, "", message["type"]);
       }
     }
-
+    
     document.getElementById("message-area").value = "";
     update_message_hint_on_chatCard(
       contact_email_and_saved_name[message["to"]],
@@ -1307,6 +1311,13 @@ const show_send_message_panel = (panel_name, messages) => {
   document
     .getElementById("msg-area-div")
     .insertAdjacentElement("afterbegin", emoji_container);
+
+  document.getElementById("clear_historyButton").addEventListener("click", (event)=>{
+    account_db[panel_name]["messages"].length = 0
+    console.log(account_db[panel_name])
+    show_send_message_panel(panel_name,[])
+    update_message_hint_on_chatCard(panel_name,{"message":''}, message_hint_element)
+  })
 
   document
     .getElementById("insert_emoji")
@@ -1676,11 +1687,11 @@ const show_send_message_panel = (panel_name, messages) => {
   // ! Displaying the messages that user has in DataBase
   if (Object.keys(account_db[panel_name]).includes("messages")) {
     account_db[panel_name]["messages"].forEach((value, index, array) => {
+      
       if (value["from"] === user_obj[user_obj["active"]]["email"]) {
-        insert_message("me", value, "", value["type"]);
+        decideDateAndInsertMessage(panel_name, index, "me", value["type"])
       } else {
-        console.log(".", value);
-        insert_message("other", value, "", value["type"]);
+        decideDateAndInsertMessage(panel_name, index, "me", value["type"])
       }
     });
   }
@@ -1706,7 +1717,37 @@ const show_send_message_panel = (panel_name, messages) => {
   }
 };
 
-const insert_message = async (sender, msg, time, message_type) => {
+const decideDateAndInsertMessage = (contact_name, index, sender, message_type) => {
+  let date = moment(new Date(account_db[contact_name]["messages"][index]["time"]))
+  let msgDate = date.format("ddd, MMM DD,YYYY")
+  let msgTime =  `${date.hour()} : ${date.minute()}`
+  
+  let difference = date.diff(moment.now(), "days")+1
+  if (difference === 1){
+    msgDate = "Yesterday";
+  } else if (difference === 0){
+    msgDate = "Today"
+  }
+  
+
+  const date_element = `<div class="date">
+												<hr>
+												<span>${msgDate}</span>
+												<hr>
+											</div>`
+  if (index > 0){
+    let prevDate = moment(new Date(account_db[contact_name]["messages"][index-1]["time"]))
+    let diff = date.diff(prevDate, "days")+1
+    if (diff > 1){
+      show_message.insertAdjacentHTML("beforeend", date_element);
+    }
+  } else {
+    show_message.insertAdjacentHTML("beforeend", date_element);
+  }
+  insert_message(sender,account_db[contact_name]["messages"][index],msgTime,message_type)
+}
+
+const insert_message = async (sender, msg, msgTime, message_type) => {
   if (message_type === "txt") {
     if (sender != "me") {
       var msg_html = `<div class="message" id="${msg["uuid"]}">
@@ -1716,7 +1757,7 @@ const insert_message = async (sender, msg, time, message_type) => {
                                             <p>${msg["message"]}</p>
                                         </div>
                                     </div>
-                                    <span>09:46 AM</span>
+                                    <span>${msgTime}</span>
                                 </div>
                             </div>`;
     } else if (sender === "me") {
@@ -1727,7 +1768,7 @@ const insert_message = async (sender, msg, time, message_type) => {
                                             <p>${msg["message"]}</p>
                                         </div>
                                     </div>
-                                    <span>09:46 AM</span>
+                                    <span>${msgTime}</span>
                                 </div>
                             </div>`;
     }
@@ -1781,7 +1822,7 @@ const insert_message = async (sender, msg, time, message_type) => {
                                             </div>
                                         </div>
                                     </div>
-                                    <span>09:46 AM</span>
+                                    <span>${msgTime}</span>
                                 </div>
                             </div>`;
     } else if (sender === "me") {
@@ -1819,7 +1860,7 @@ const insert_message = async (sender, msg, time, message_type) => {
                                             </div>
                                         </div>
                                     </div>
-                                    <span>09:46 AM</span>
+                                    <span>${msgTime}</span>
                                 </div>
                             </div>`;
     }
@@ -1843,7 +1884,7 @@ const insert_message = async (sender, msg, time, message_type) => {
                                             </div>
                                         </div>
                                     </div>
-                                    <span>11:07 PM</span>
+                                    <span>${msgTime}</span>
                                 </div>
                             </div>`;
     } else if (sender === "me") {
@@ -1857,7 +1898,7 @@ const insert_message = async (sender, msg, time, message_type) => {
                                             </div>
                                         </div>
                                     </div>
-                                    <span>11:07 PM</span>
+                                    <span>${msgTime}</span>
                                 </div>
                             </div>`;
     }
@@ -1881,7 +1922,7 @@ const insert_message = async (sender, msg, time, message_type) => {
                                             </div>
                                         </div>
                                     </div>
-                                    <span>11:07 PM</span>
+                                    <span>${msgTime}</span>
                                 </div>
                             </div>`;
     } else if (sender === "me") {
@@ -1895,7 +1936,7 @@ const insert_message = async (sender, msg, time, message_type) => {
                                             </div>
                                         </div>
                                     </div>
-                                    <span>11:07 PM</span>
+                                    <span>${msgTime}</span>
                                 </div>
                             </div>`;
     }
@@ -1916,7 +1957,7 @@ const insert_message = async (sender, msg, time, message_type) => {
                                             </div>
                                         </div>
                                     </div>
-                                    <span>11:07 PM</span>
+                                    <span>${msgTime}</span>
                                 </div>
                             </div>`;
     } else if (sender === "me") {
@@ -1937,7 +1978,7 @@ const insert_message = async (sender, msg, time, message_type) => {
                                             </div>
                                         </div>
                                     </div>
-                                    <span>11:07 PM</span>
+                                    <span>${msgTime}</span>
                                 </div>
                             </div>`;
     }

@@ -1325,14 +1325,14 @@ input:checked+.slider:before {
  padding:26px 0 46px
 }
 .main .chat .content .date hr {
- width:100%;
- border-top:2px solid #1f2a35;
+ width:36%;
+ border-top:2px solid #1c3957;
  margin-top:0;
  margin-bottom:0
 }
 .main .chat .content .date span {
  display:block;
- padding:0 20px
+ padding:0px
 }
 .main .chat .content .message {
  display:-ms-flexbox;
