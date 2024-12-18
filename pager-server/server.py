@@ -13,6 +13,7 @@ from threading import Thread
 from io import BytesIO
 from PIL import Image
 users_online = {}
+blockedContacts = {}
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -23,7 +24,9 @@ app = socketio.WSGIApp(sio, static_files={
     '/': {'content_type': 'text/html', 'filename': 'index.html'}
 })
 
-
+if not os.path.exists("./resources/blockedContacts.json"):
+    with open("./resources/blockedContacts.json","w") as _file:
+        json.dump(blockedContacts, _file)
 
 @sio.event
 def connect(sid, environ):
@@ -74,7 +77,8 @@ def recieve_message(sid, msg_data):
     message_to_save = {"id": msg_data["uuid"], "message": msg_data["message"],
                        "time": msg_data["time"], "type": "txt", "sender": msg_data["from"], "recipient": msg_data["to"]}
     recipient = DB.find(filter={"email": msg_data["to"]}, table=DB.users_table)
-    if recipient != None:
+    
+    if recipient != None and (not msg_data["from"] in blockedContacts[msg_data["to"]]):
         if recipient["online_status"] == 0:
             json_content = ''
 
@@ -294,17 +298,7 @@ def send_ice_cand(sid, obj):
     callee = DB.find(filter={"email": obj["email"]}, table=DB.users_table)
     if callee != None:
         if callee["online_status"] == 1:
-            sio.emit("icecandidate", obj["cand"], callee["sid"])  # callee["sid"])
-
-
-@sio.event
-def _ice_cand(sid, obj):
-    print("INCOMING CALL")
-    print("ICE cand ", obj)
-    callee = DB.find(filter={"email": obj["email"]}, table=DB.users_table)
-    if callee != None:
-        if callee["online_status"] == 1:
-            sio.emit("icecandidate", obj["cand"], callee["sid"])
+            sio.emit("icecandidate", obj["cand"], callee["sid"])  
 
 
 @sio.event
@@ -360,7 +354,13 @@ def end_call(sid, callee):
             sio.emit("end_call_alert", True, callee["sid"])
 @sio.event
 def block_contact(sid, info):
-    print("Blocking...")
+    if blockedContacts[info["blocker"]]:
+        blockedContacts[info["blocker"]].append(info["blockee"])
+    else:
+        blockedContacts[info["blocker"]] = [info["blockee"]]
+
+    with open("./resources/blockedContacts.json", "w") as _file:
+        json.dump(blockedContacts, _file)
 
     
 if __name__ == '__main__':

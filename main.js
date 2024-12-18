@@ -563,7 +563,11 @@ ipc.on("endCall", (event, mail)=>{
 })
 
 ipc.on("blockSomeone", (event, data)=>{
+  active_user_db_object[data.name].blocked = true
+  delete data.name
   socket_functions.blockSomeone(data)
+  db_to_save = safe_storage.encryptString(JSON.stringify(active_user_db_object))
+  local_db_io.save_contact(users_db_object["active"], db_to_save)
 })
 
 ipc.on("clear_chat_history",(event, name)=>{

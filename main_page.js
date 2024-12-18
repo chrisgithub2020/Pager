@@ -1339,8 +1339,9 @@ const show_send_message_panel = (panel_name, messages) => {
   })
 
   document.getElementById("block_contactButton").addEventListener("click", (event)=>{
-    const blocking_data =  {"blocker":user_obj[user_obj["active"]]["email"], "blockee":account_db[panel_name]["email"]}
+    const blocking_data =  {"blocker":user_obj[user_obj["active"]]["email"], "blockee":account_db[panel_name]["email"], "name":panel_name}
     ipc.send("blockSomeone",blocking_data )
+    account_db[panel_name].blocked = true
   })
 
   document
