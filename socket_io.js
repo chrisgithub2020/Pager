@@ -78,6 +78,6 @@ module.exports.end_call = async (mail)=>{
     socket.emit("end_call",mail)
 }
 
-module.exports.voice_call_data = async (call_data)=>{
-    socket.emit("voice_call_data",call_data)
+module.exports.blockSomeone = async (data) => {
+    socket.emit("block_contact", data)
 }

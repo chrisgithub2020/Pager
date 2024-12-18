@@ -561,3 +561,23 @@ ipc.on("endCall", (event, mail)=>{
   socket_functions.end_call(mail)
   
 })
+
+ipc.on("blockSomeone", (event, data)=>{
+  socket_functions.blockSomeone(data)
+})
+
+ipc.on("clear_chat_history",(event, name)=>{
+  if (active_user_db_object[name]["messages"].length > 0){
+    active_user_db_object[name]["messages"].length = 0
+    db_to_save = safe_storage.encryptString(JSON.stringify(active_user_db_object))
+    local_db_io.save_contact(users_db_object["active"], db_to_save)
+  }
+})
+
+ipc.on("delete_contact", (event, name)=>{
+  if (active_user_db_object[name]){
+    delete active_user_db_object[name]
+    db_to_save = safe_storage.encryptString(JSON.stringify(active_user_db_object))
+    local_db_io.save_contact(users_db_object["active"], db_to_save)
+  }
+})

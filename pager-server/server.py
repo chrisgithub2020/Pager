@@ -358,13 +358,11 @@ def end_call(sid, callee):
         if callee["online_status"] == 1:
             print("online", callee["sid"])
             sio.emit("end_call_alert", True, callee["sid"])
-
-
 @sio.event
-def voice_call_data(sid,call_data):
-    sio.emit(event="recieve_call_data",room_name=call_data["call_room"])
+def block_contact(sid, info):
+    print("Blocking...")
 
-
+    
 if __name__ == '__main__':
     PORT = os.environ.get('PORT',9000)
     eventlet.wsgi.server(eventlet.listen(("0.0.0.0", int(PORT))), app)

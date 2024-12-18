@@ -173,6 +173,7 @@ const Call = {
     };
 
     ipc.send("send-offer", JSON.stringify(offer_obj));
+    saveCall("outgoing", Call.calltype)// save call to history
 
     ipc.on("rtc-answer", (event, answer) => {
       Call.pc.setRemoteDescription(answer["answer"]);
@@ -212,6 +213,15 @@ const disableCallEle = () => {
   }
 }
 
+const saveCall = async (call_direction, call_type) => {
+  let call_obj = {"email":Call.callee_email, "direction":call_direction, "time_started":moment.now(), "time_ended":"", "call_type":call_type}
+  if (!user_obj[user_obj["active"]].calls){
+    user_obj[user_obj["active"]].calls = [call_obj]
+  } else {
+    user_obj[user_obj["active"]].calls.push(call_obj)
+  }
+}
+
 ipc.on("rtc-offer", async (event, offer) => {
   if (Call.pc.signalingState === "closed"){// will create another instance after connection is closed and another call
     Call.pc = new RTCPeerConnection(stun_server)
@@ -224,7 +234,7 @@ ipc.on("rtc-offer", async (event, offer) => {
   Call.calltype = offer.calltype;
   const answer_end_call_button = document.getElementById("answer-end-call");
   answer_end_call_button.style.background = "#6fbf79";
-
+  saveCall("incoming", Call.calltype)// this saves the call to history
   $("#chat").hide();
   $("#call").show();
   if (offer.calltype === "audio") {
@@ -1169,8 +1179,8 @@ const show_send_message_panel = (panel_name, messages) => {
                                             <button id="voice-call" class="dropdown-item connect" name="1"><i class="material-icons">phone_in_talk</i>Voice Call</button>
                                             <button id="video-call" class="dropdown-item connect" name="1"><i class="material-icons">videocam</i>Video Call</button>
                                             <button class="dropdown-item" id="clear_historyButton"><i class="material-icons">clear</i>Clear History</button>
-                                            <button class="dropdown-item"><i class="material-icons">block</i>Block Contact</button>
-                                            <button class="dropdown-item"><i class="material-icons">delete</i>Delete Contact</button>
+                                            <button class="dropdown-item" id="block_contactButton"><i class="material-icons">block</i>Block Contact</button>
+                                            <button class="dropdown-item" id="delete_contactButton"><i class="material-icons">delete</i>Delete Contact</button>
                                         </div>
                                     </div>
                                 </div>
@@ -1317,6 +1327,20 @@ const show_send_message_panel = (panel_name, messages) => {
     console.log(account_db[panel_name])
     show_send_message_panel(panel_name,[])
     update_message_hint_on_chatCard(panel_name,{"message":''}, message_hint_element)
+    ipc.send("clear_chat_history", panel_name)
+  })
+
+  document.getElementById("delete_contactButton").addEventListener("click", (event)=>{// have to save changes that will occur
+    delete account_db[panel_name]
+    document.getElementById(panel_name).remove()
+    console.log(account_db)
+    $("#chat").hide()
+    ipc.send("delete_contact", panel_name)
+  })
+
+  document.getElementById("block_contactButton").addEventListener("click", (event)=>{
+    const blocking_data =  {"blocker":user_obj[user_obj["active"]]["email"], "blockee":account_db[panel_name]["email"]}
+    ipc.send("blockSomeone",blocking_data )
   })
 
   document
