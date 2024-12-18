@@ -306,13 +306,12 @@
 											<tbody>Online</tbody>
 										</div>
 									</div>
-									<div class="settings-category">
-	
-										<a href="#editProfile" data-toggle="tab" class="btn setting-btn"><i class="material-icons setting-material-icon">info</i>Edit Profile</a>
-										<a href="#notification" onclick="insert_go_back_btn()" data-toggle="tab" class="btn setting-btn"><i class="material-icons setting-material-icon">notifications_none</i>Notification</a>
-										<a class="btn setting-btn"><i class="material-icons setting-material-icon">colorize</i>Appearance</a>
-										<a class="btn setting-btn"><i class="material-icons setting-material-icon">chat_bubble_outline</i>Chat Settings</a>
-										<a class="btn setting-btn"><i class="material-icons setting-material-icon">lock_outline</i>Privacy & Security</a>
+									<div class="settings-category">	
+										<a href="#editProfile" onclick="insert_go_back_btn('ediProfile-title')" data-toggle="tab" class="btn setting-btn"><i class="material-icons setting-material-icon">info</i>Edit Profile</a>
+										<a href="#notification" onclick="insert_go_back_btn('notification-title')" data-toggle="tab" class="btn setting-btn"><i class="material-icons setting-material-icon">notifications_none</i>Notification</a>
+										<a class="btn setting-btn" onclick="insert_go_back_btn('appearance-title')"><i class="material-icons setting-material-icon">colorize</i>Appearance</a>
+										<a class="btn setting-btn" onclick="insert_go_back_btn('chatSettings-title')"><i class="material-icons setting-material-icon">chat_bubble_outline</i>Chat Settings</a>
+										<a class="btn setting-btn" onclick="insert_go_back_btn('privacuSecurity-title')"><i class="material-icons setting-material-icon">lock_outline</i>Privacy & Security</a>
 									</div>
 									<div class="settings-category no-bottom-border">
 										<button class="btn setting-btn"><i class="material-icons setting-material-icon">help</i>Help</button>
@@ -322,7 +321,7 @@
 								</div>
 							</div>
 							<div class="tab-pane fade" id="editProfile">
-								<div class="title">
+								<div id="ediProfile-title" class="title">
 									<h1>Edit Profile</h1>
 									<button type="button" class="btn" data-dismiss="modal" aria-label="Close"><i class="material-icons">close</i></button>
 								</div>
@@ -348,7 +347,7 @@
 								</div>
 							</div>
 							<div class="tab-pane fade" id="notification">
-								<div id=",," class="title">
+								<div id="notification-title" class="title">
 									<h1>Notification</h1>
 									<button type="button" class="btn" data-dismiss="modal" aria-label="Close"><i class="material-icons">close</i></button>
 								</div>

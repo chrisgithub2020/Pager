@@ -26,10 +26,14 @@ const allow_only_admins_to_change_profile_pic = document.getElementById(
 const allow_members_to_change_profile_pic = document.getElementById(
   "allow-members-change-profile-pic"
 );
+
+const contact_pic = document.getElementById("contact-pic")
 const audio_for_call_element = document.getElementById("callRemoteStreamAudio");
 let send_audio_message_play_pause = null;
 let audio_playing = false;
 let clique_list = []; // List of all cliques in db
+let mouseX = null;
+let mouseY = null;
 const go_back_btns = document.getElementsByClassName("go-back");
 var localStream = null;
 var remoteStream = null;
@@ -40,7 +44,11 @@ var ICE_Candidate = null;
 //When a user clicks a chat and want to start communicating
 let chat_to_perform_action = null;
 var no_contact = false;
-
+document.addEventListener("mousemove", setMousePos, false)
+function setMousePos(event) {
+  mouseX = event.pageX;
+  mouseY = event.pageY
+}
 // const PeerJs = new Peer()
 
 // Calling
@@ -169,7 +177,7 @@ const Call = {
       offer: offer,
       email: Call.callee_email,
       calltype: Call.calltype,
-      sid: "gTRy8fTbQP3Vmh5bAAB8",
+      caller: user_obj[user_obj["active"]]["email"],
     };
 
     ipc.send("send-offer", JSON.stringify(offer_obj));
@@ -306,6 +314,7 @@ const pcEvents = () => {
       const cand_data = {
         cand: event.candidate,
         email: Call.callee_email,
+        caller: user_obj[user_obj["active"]]["email"]
       };
       ipc.send("send-ice-cand", JSON.stringify(cand_data));
     }
@@ -491,9 +500,9 @@ const settings_go_back_btn = document.createElement("a");
 settings_go_back_btn.setAttribute("class", "btn");
 settings_go_back_btn.innerHTML = `<i class="material-icons">arrow_back</i>`;
 
-const insert_go_back_btn = () => {
+const insert_go_back_btn = (id) => {
   document
-    .getElementById(",,")
+    .getElementById(id)
     .insertAdjacentElement("afterbegin", settings_go_back_btn);
 };
 settings_go_back_btn.addEventListener("click", (event) => {
@@ -524,7 +533,7 @@ settings_go_back_btn.addEventListener("click", (event) => {
                                                                         </div>
                                                                         <div class="settings-content">
                                                                             <div class="active-account">
-                                                                                <img id="setting-profile-picture" src="dist/img/avatars/avatar-female-1.jpg" alt="" class="settings-profile-photo">
+                                                                                <img id="setting-profile-picture" src="${(user_obj[user_obj["active"]]["profile_pic"] === "") ? homeDir + "//.pager//resources//default_profile_pic.jpg": "data:image/png;base64,"+user_obj[user_obj["active"]]["profile_pic"]}" alt="" class="settings-profile-photo">
                                                                                 <div id="active-account-name-and-status">
                                                                                     <h6 id="username">Username</h6>
                                                                                     <tbody>Online</tbody>
@@ -551,7 +560,7 @@ settings_go_back_btn.addEventListener("click", (event) => {
                                                                             <button type="button" class="btn" data-dismiss="modal" aria-label="Close"><i class="material-icons">close</i></button>
                                                                         </div>
                                                                         <div class="set-profile-photo-area">
-                                                                            <img src="dist/img/avatars/avatar-female-1.jpg" alt="Profile Photo" class="settings-profile-photo center-profile-photo">
+                                                                            <img src="${(user_obj[user_obj["active"]]["profile_pic"] === "") ? homeDir + "//.pager//resources//default_profile_pic.jpg": "data:image/png;base64,"+user_obj[user_obj["active"]]["profile_pic"]}" alt="Profile Photo" class="settings-profile-photo center-profile-photo">
                                                                             <button type="button" class="btn change-profile-photo" id="change-profile-photo-user">Change Profile Photo</button>									
                                                                         </div>
                                                                         <div class="edit-profile">
@@ -572,7 +581,7 @@ settings_go_back_btn.addEventListener("click", (event) => {
                                                                         </div>
                                                                     </div>
                                                                     <div class="tab-pane fade" id="notification">
-                                                                        <div id=",," class="title">
+                                                                        <div id="notification-title" class="title">
                                                                             <h1>Notification</h1>
                                                                             <button type="button" class="btn" data-dismiss="modal" aria-label="Close"><i class="material-icons">close</i></button>
                                                                         </div>
@@ -1107,14 +1116,18 @@ ipc.on("message", (event, msg) => {
 
 const insert_chat_card = async (card_name, msg) => {
   let image_path;
+  let day = ""
   if (account_db[card_name]["profile_picture"] === "") {
     image_path = homeDir + "//.pager//resources//default_profile_pic.jpg";
   } else {
     image_path = `data:image/png;base64,${account_db[card_name]["profile_picture"]}`;
   }
-  let time = moment(new Date(account_db[card_name]["messages"][account_db[card_name]["messages"].length-1]["time"]))
-  let day = time.format("DD MMM")
-  console.log(time)
+  if (account_db[card_name]["messages"].length > 0){
+    let time = moment(new Date(account_db[card_name]["messages"][account_db[card_name]["messages"].length-1]["time"]))
+    day = time.format("DD MMM")
+  } else {
+    msg = "Send message"
+  }
   if (card_name === "unknown") {
     var chat_card = `<a href="#list-chat" class="filterDiscussions all unread single" id="${card_name}" data-toggle="list" role="tab">
                             <img class="avatar-md" src="" data-toggle="tooltip" data-placement="top" title="Mildred" alt="avatar">
@@ -1351,17 +1364,31 @@ const show_send_message_panel = (panel_name, messages) => {
       emoji_container.style.left =
         document.getElementById("sidebar").clientWidth + 15 + "px";
       emoji_container.style.transform = "scale(1)";
-      emoji_container.style.transition = "transform 300ms ease-in-out";
+      emoji_container.style.transition = "transform 50ms ease-in-out";
     });
   // * hiding
   document
     .getElementById("insert_emoji")
     .addEventListener("mouseout", (event) => {
-      console.log(event.clientX);
-      emoji_container.style.transform = "scale(0)";
-      emoji_container.style.transition = "transition 300ms ease-in-out";
+      const emoji_container_position = emoji_container.getBoundingClientRect()
+      const timer = setTimeout(()=>{
+        if ((mouseX >= emoji_container_position.x && mouseX <= emoji_container_position.x+emoji_container_position.width) && (mouseY >= emoji_container_position.y && mouseY <= emoji_container_position.y+emoji_container_position.height)){
+          let pos = {"el_x":emoji_container_position.x, "el_y":emoji_container_position.y, "el_x_bound":emoji_container_position.x+emoji_container_position.width, "el_y_bound":emoji_container_position.y+emoji_container_position.height, "mouse_x": mouseX, "mouse_y":mouseY}
+          console.log(pos)
+        } else {
+          let pos = {"el_x":emoji_container_position.x, "el_y":emoji_container_position.y, "el_x_bound":emoji_container_position.x+emoji_container_position.width, "el_y_bound":emoji_container_position.y+emoji_container_position.height, "mouse_x": mouseX, "mouse_y":mouseY}
+          console.log(pos)
+
+          emoji_container.style.transform = "scale(0)";
+          emoji_container.style.transition = "transition 300ms ease-in-out";
+        }
+      },600)
     });
   // ! ************************
+  emoji_container.addEventListener("mouseleave",(event)=>{
+    emoji_container.style.transform = "scale(0)";
+    emoji_container.style.transition = "transition 300ms ease-in-out";
+  })
 
   document.getElementById("chat-info").addEventListener("click", (event) => {
     $("#chatInfo").modal("show");

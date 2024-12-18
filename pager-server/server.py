@@ -296,7 +296,7 @@ def send_ice_cand(sid, obj):
     print("INCOMING CALL")
     print("ICE cand ", obj)
     callee = DB.find(filter={"email": obj["email"]}, table=DB.users_table)
-    if callee != None:
+    if callee != None and not obj["caller"] in blockedContacts[callee["email"]]:
         if callee["online_status"] == 1:
             sio.emit("icecandidate", obj["cand"], callee["sid"])  
 
@@ -308,7 +308,7 @@ def send_offer(sid, offer):
     callee = DB.find(
         filter={"email": offer["email"]}, table=DB.users_table)
     caller = DB.find(filter={"sid": sid}, table=DB.users_table)
-    if callee != None:
+    if callee != None and not offer["caller"] in blockedContacts[callee["email"]]:
         if callee["online_status"] == 1:
 
             offer_obj = {
