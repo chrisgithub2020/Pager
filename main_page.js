@@ -14,6 +14,7 @@ const {
   LocalFileData,
   getFileObjectFromLocalPath,
 } = require("get-file-object-from-local-path");
+const { eventNames } = require("process");
 const allow_member_to_send_msg_checkBox = document.getElementById(
   "allow-members-send-message"
 );
@@ -26,6 +27,9 @@ const allow_only_admins_to_change_profile_pic = document.getElementById(
 const allow_members_to_change_profile_pic = document.getElementById(
   "allow-members-change-profile-pic"
 );
+
+const call_contact_voice = document.getElementById("call-contact-voice")
+const call_contact_video = document.getElementById("call-contact-video")
 
 const contact_pic = document.getElementById("contact-pic")
 const audio_for_call_element = document.getElementById("callRemoteStreamAudio");
@@ -342,6 +346,18 @@ ipc.on("icecandidate", (event, candidate) => {
   }
 });
 
+call_contact_voice.addEventListener("click", (event)=>{
+  Call.calltype = "audio"
+  Call.callee_email = contact_to_perform_action
+  Call.start()
+})
+
+call_contact_video.addEventListener("click", (event)=>{
+  Call.calltype = "video"
+  Call.callee_email = contact_to_perform_action
+  Call.start()
+})
+
 var recording_audio = false;
 var voice_callBTN;
 let voice_call_media;
@@ -495,11 +511,13 @@ const emoji_container_content = `<div id="emoji-top">
                                 <div class="tab-pane fade active show" id="emoji-div"></div>`;
 emoji_container.innerHTML = emoji_container_content;
 // ! *********************************************
-
+let contactsModalContent = ""
+const contact_go_back = () => {
+  // document.getElementById("contactsModal").innerHTML = contactsModalContent
+}
 const settings_go_back_btn = document.createElement("a");
 settings_go_back_btn.setAttribute("class", "btn");
 settings_go_back_btn.innerHTML = `<i class="material-icons">arrow_back</i>`;
-
 const insert_go_back_btn = (id) => {
   document
     .getElementById(id)
@@ -780,6 +798,7 @@ ipc.on("display_utility_on_startup", async (event, data) => {
           });
       }
     });
+    contactsModalContent = document.getElementById("contactsModal").innerHTML
 
     // Alerts the main process to tell the server to add me to the rooms of the cliques i have joined
     ipc.send("enter_clique_rooms", clique_list);

@@ -63,11 +63,16 @@ const createWindow = () => {
     ipc.on("ready-to-go", async (event, data) => {
       const emojis_obj = data["emojis"]
       var emojis_html = ''
-      for (var i = 0; i <= emojis_obj["keys"].length; i++) {
-        var emoji_id = emojis_obj["keys"][i]
-        var emoji = emojis_obj["object"][emojis_obj["keys"][i]]
-        var emoji_btn = `<a class="emoji-btn" id="${emoji_id}">${emoji}</a>`
-        emojis_html += emoji_btn
+      try {
+
+        for (var i = 0; i <= emojis_obj["keys"].length; i++) {
+          var emoji_id = emojis_obj["keys"][i]
+          var emoji = emojis_obj["object"][emojis_obj["keys"][i]]
+          var emoji_btn = `<a class="emoji-btn" id="${emoji_id}">${emoji}</a>`
+          emojis_html += emoji_btn
+        }
+      } catch (err) {
+        event.sender.send("tryagain")
       }
 
 

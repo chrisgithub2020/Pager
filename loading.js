@@ -196,6 +196,9 @@ const local_db = fs.readFile(homeDir + "\\.pager\\resources\\user.page", (err, d
 
 
         ipc.send("ready-to-go", { "emojis": emojis_obj, "direction": direction })
+        ipc.on("tryagain", (event)=>{
+          ipc.send("ready-to-go", { "emojis": emojis_obj, "direction": direction })
+        })
       })
 
     })
