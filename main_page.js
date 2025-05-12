@@ -62,7 +62,7 @@ const stun_server = {
 
 const setServer = async () => {
   const response = await fetch(
-    "https://pager-turn.metered.live/api/v1/turn/credentials?apiKey=dd6b2d9cb3ce9160addbf47f9017e320e1ed"
+    "https://appDomain/api/v1/turn/credentials?apiKey=API_key" // Open relay will give it to you
   );
   const iceServers = await response.json();
   stun_server.iceServers = iceServers;
